@@ -11,10 +11,11 @@ import { toJsonSchema } from "@valibot/to-json-schema";
 import type { BaseIssue, BaseSchema } from "valibot";
 import {
 	LabelGroupsSchema,
+	MembersFileSchema,
 	OrgConfigSchema,
 	ReposFileSchema,
 	RulesetsFileSchema,
-	TeamsConfigSchema,
+	TeamsFileSchema,
 } from "@/types";
 
 // biome-ignore lint/suspicious/noExplicitAny: schemas have heterogeneous output types
@@ -27,7 +28,8 @@ const targets: Record<string, AnySchema> = {
 	org: OrgConfigSchema,
 	repos: ReposFileSchema,
 	rulesets: RulesetsFileSchema,
-	teams: TeamsConfigSchema,
+	teams: TeamsFileSchema,
+	members: MembersFileSchema,
 	labels: LabelGroupsSchema,
 };
 
