@@ -10,9 +10,11 @@ import {
 } from "./repo";
 import { TeamsConfigSchema } from "./team";
 
-function findDuplicates(values: string[]): string[] {
+export function findDuplicates(values: string[]): string[] {
 	const groups = groupBy(values, (item) => item);
-	return Object.keys(groups).filter((k) => groups[k].length > 1);
+	return Object.entries(groups)
+		.filter(([, items]) => items.length > 1)
+		.map(([key]) => key);
 }
 
 const OrgFeaturesSchema = v.strictObject({
