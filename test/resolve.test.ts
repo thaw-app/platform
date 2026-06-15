@@ -22,6 +22,7 @@ const baseCtx = {
 	teamAccess: [],
 	labels: {},
 	organization: "acme",
+	codeownersContent: "* @acme-org/maintainers\n",
 };
 
 const repo = (overrides: Partial<RepoConfig> = {}): RepoConfig => ({
@@ -62,6 +63,7 @@ describe("buildRepoConfig", () => {
 		);
 		expect(Object.keys(built.resolvedBranchProtection)).toEqual(["main"]);
 		const bp = built.resolvedBranchProtection.main;
+		if (!bp) throw new Error("expected branch protection for main");
 		expect(bp.enforceAdmins).toBe(true);
 		// requiredPullRequestReviews is typed as a Pulumi Input union; at build
 		// time it's a plain array, so narrow it for the assertion.

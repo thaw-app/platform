@@ -38,6 +38,12 @@ const settle = () => new Promise((r) => setTimeout(r, 0));
 
 const findByType = (t: string) => registered.filter((r) => r.type === t);
 
+const first = <T>(items: T[]): T => {
+	const item = items[0];
+	if (!item) throw new Error("expected at least one item");
+	return item;
+};
+
 const resolvedRepo = (
 	overrides: Partial<ResolvedRepoConfig> = {},
 ): ResolvedRepoConfig => ({
@@ -54,7 +60,24 @@ const resolvedRepo = (
 	resolvedBranchProtection: {},
 	squashMergeCommitTitle: "PR_TITLE",
 	squashMergeCommitMessage: "COMMIT_MESSAGES",
+	defaultBranch: "main",
+	codeownersContent: "* @acme-org/maintainers\n",
 	...overrides,
+});
+
+const defaultRules = (): RulesetConfig["rules"] => ({
+	creation: false,
+	update: false,
+	deletion: false,
+	nonFastForward: false,
+	requiredLinearHistory: false,
+	requiredSignatures: false,
+	copilotCodeReview: { reviewDraftPullRequests: false, reviewOnPush: false },
+	pullRequest: {},
+	requiredStatusChecks: { enabled: false },
+	requiredCodeScanning: { enabled: false },
+	mergeQueue: { enabled: false },
+	requiredDeployments: { enabled: false },
 });
 
 const mainRuleset = (
@@ -64,7 +87,7 @@ const mainRuleset = (
 	target: "branch",
 	enforcement: "active",
 	conditions: { refName: { includes: ["~DEFAULT_BRANCH"] } },
-	rules: {},
+	rules: defaultRules(),
 	...overrides,
 });
 
@@ -91,7 +114,7 @@ describe("OrgRepository", () => {
 		);
 		await settle();
 
-		const repo = findByType("github:index/repository:Repository")[0];
+		const repo = first(findByType("github:index/repository:Repository"));
 		expect(repo.inputs.allowSquashMerge).toBe(true);
 		expect(repo.inputs.allowMergeCommit).toBe(false);
 		expect(repo.inputs.allowRebaseMerge).toBe(false);
@@ -103,7 +126,7 @@ describe("OrgRepository", () => {
 		new OrgRepository("r", resolvedRepo({ mergeStrategies: ["merge"] }), {});
 		await settle();
 
-		const repo = findByType("github:index/repository:Repository")[0];
+		const repo = first(findByType("github:index/repository:Repository"));
 		expect(repo.inputs.allowSquashMerge).toBe(false);
 		expect("squashMergeCommitTitle" in repo.inputs).toBe(false);
 	});
@@ -157,9 +180,29 @@ describe("OrgRepository", () => {
 		expect(
 			findByType("github:index/teamRepository:TeamRepository"),
 		).toHaveLength(1);
-		const bp = findByType("github:index/branchProtection:BranchProtection")[0];
+		const bp = first(
+			findByType("github:index/branchProtection:BranchProtection"),
+		);
 		expect(bp.inputs.pattern).toBe("main");
 		expect(findByType("github:index/issueLabel:IssueLabel")).toHaveLength(2);
+	});
+
+	it("syncs CODEOWNERS from org config", async () => {
+		new OrgRepository(
+			"r",
+			resolvedRepo({
+				codeownersContent: "* @acme-org/maintainers\n",
+			}),
+			{},
+		);
+		await settle();
+
+		const file = first(
+			findByType("github:index/repositoryFile:RepositoryFile"),
+		);
+		expect(file.inputs.file).toBe(".github/CODEOWNERS");
+		expect(file.inputs.content).toBe("* @acme-org/maintainers");
+		expect(file.inputs.autocreateBranch).toBe(true);
 	});
 });
 
@@ -180,9 +223,9 @@ describe("createRulesets", () => {
 		createRulesets([mainRuleset({ id: "default-rs" })]);
 		await settle();
 
-		const rs = findByType(
-			"github:index/organizationRuleset:OrganizationRuleset",
-		)[0];
+		const rs = first(
+			findByType("github:index/organizationRuleset:OrganizationRuleset"),
+		);
 		expect(rs.inputs.name).toBe("default-rs");
 		expect(
 			(rs.inputs.conditions as { repositoryName: { includes: string[] } })
@@ -190,36 +233,64 @@ describe("createRulesets", () => {
 		).toEqual(["~ALL"]);
 	});
 
-	it("defaults requiredChecks to an empty array when requiredStatusChecks is present", async () => {
+	it("maps requiredChecks when requiredStatusChecks is enabled", async () => {
 		createRulesets([
 			mainRuleset({
 				id: "checks",
 				rules: {
-					requiredStatusChecks: { strictRequiredStatusChecksPolicy: true },
+					...defaultRules(),
+					requiredStatusChecks: {
+						enabled: true,
+						requiredChecks: [{ context: "ci" }],
+						strictRequiredStatusChecksPolicy: true,
+					},
 				},
 			}),
 		]);
 		await settle();
 
-		const rs = findByType(
-			"github:index/organizationRuleset:OrganizationRuleset",
-		)[0];
+		const rs = first(
+			findByType("github:index/organizationRuleset:OrganizationRuleset"),
+		);
 		expect(
 			(
 				rs.inputs.rules as {
 					requiredStatusChecks: { requiredChecks: unknown[] };
 				}
 			).requiredStatusChecks.requiredChecks,
-		).toEqual([]);
+		).toEqual([{ context: "ci" }]);
 	});
 
-	it("omits requiredStatusChecks when absent from config", async () => {
-		createRulesets([mainRuleset({ id: "no-checks", rules: {} })]);
+	it("omits requiredStatusChecks when acceptAnyOf is set", async () => {
+		createRulesets([
+			mainRuleset({
+				id: "any-ci",
+				rules: {
+					...defaultRules(),
+					requiredStatusChecks: {
+						enabled: true,
+						acceptAnyOf: ["ci", "build", "test"],
+					},
+				},
+			}),
+		]);
 		await settle();
 
-		const rs = findByType(
-			"github:index/organizationRuleset:OrganizationRuleset",
-		)[0];
+		const rs = first(
+			findByType("github:index/organizationRuleset:OrganizationRuleset"),
+		);
+		expect(
+			(rs.inputs.rules as Record<string, unknown>).requiredStatusChecks,
+		).toBeUndefined();
+	});
+
+	it("omits requiredStatusChecks when disabled in config", async () => {
+		createRulesets([mainRuleset({ id: "no-checks" })]);
+		await settle();
+
+		const rs = first(
+			findByType("github:index/organizationRuleset:OrganizationRuleset"),
+		);
 		expect(
 			(rs.inputs.rules as Record<string, unknown>).requiredStatusChecks,
 		).toBeUndefined();
@@ -246,9 +317,9 @@ describe("createEnvironments", () => {
 		);
 		await settle();
 
-		const env = findByType(
-			"github:index/repositoryEnvironment:RepositoryEnvironment",
-		)[0];
+		const env = first(
+			findByType("github:index/repositoryEnvironment:RepositoryEnvironment"),
+		);
 		expect(env.inputs.deploymentBranchPolicy).toEqual({
 			protectedBranches: true,
 			customBranchPolicies: false,

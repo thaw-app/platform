@@ -88,11 +88,28 @@ describe("duplicate detection", () => {
 	});
 
 	it("rejects duplicate ruleset ids", () => {
+		const rules = {
+			creation: false,
+			update: false,
+			deletion: false,
+			nonFastForward: false,
+			requiredLinearHistory: false,
+			requiredSignatures: false,
+			copilotCodeReview: {
+				reviewDraftPullRequests: false,
+				reviewOnPush: false,
+			},
+			pullRequest: {},
+			requiredStatusChecks: { enabled: false },
+			requiredCodeScanning: { enabled: false },
+			mergeQueue: { enabled: false },
+			requiredDeployments: { enabled: false },
+		};
 		const ruleset = (id: string) => ({
 			id,
 			target: "branch",
 			conditions: { refName: { includes: ["~DEFAULT_BRANCH"] } },
-			rules: {},
+			rules,
 		});
 		const r = v.safeParse(RulesetsFileSchema, {
 			rulesets: [ruleset("dup"), ruleset("dup")],

@@ -26,14 +26,36 @@ const baseConfig = (): InfraConfig => ({
 		teams: [{ slug: "maintainers", name: "Maintainers" }],
 		repoAccess: {},
 	},
+	codeownersContent: "* @acme-org/maintainers\n",
 });
+
+const defaultRules = (): RulesetConfig["rules"] => ({
+	creation: false,
+	update: false,
+	deletion: false,
+	nonFastForward: false,
+	requiredLinearHistory: false,
+	requiredSignatures: false,
+	copilotCodeReview: { reviewDraftPullRequests: false, reviewOnPush: false },
+	pullRequest: {},
+	requiredStatusChecks: { enabled: false },
+	requiredCodeScanning: { enabled: false },
+	mergeQueue: { enabled: false },
+	requiredDeployments: { enabled: false },
+});
+
+const repoEntry = (cfg: InfraConfig) => {
+	const repo = cfg.repos[0];
+	if (!repo) throw new Error("expected repo in base config");
+	return repo;
+};
 
 const mainRuleset = (id: string): RulesetConfig => ({
 	id,
 	target: "branch",
 	enforcement: "active",
 	conditions: { refName: { includes: ["~DEFAULT_BRANCH"] } },
-	rules: {},
+	rules: defaultRules(),
 });
 
 describe("validateCrossRefs", () => {
@@ -48,7 +70,7 @@ describe("validateCrossRefs", () => {
 		};
 		const issues = validateCrossRefs(cfg, {});
 		expect(issues).toHaveLength(1);
-		expect(issues[0].message).toMatch(/unknown repo "ghost"/);
+		expect(issues[0]?.message).toMatch(/unknown repo "ghost"/);
 	});
 
 	it("flags repoAccess pointing at an unknown team", () => {
@@ -56,17 +78,17 @@ describe("validateCrossRefs", () => {
 		cfg.teams.repoAccess = { r: [{ team: "ghosts", permission: "push" }] };
 		const issues = validateCrossRefs(cfg, {});
 		expect(issues).toHaveLength(1);
-		expect(issues[0].message).toMatch(/unknown team "ghosts"/);
+		expect(issues[0]?.message).toMatch(/unknown team "ghosts"/);
 	});
 
 	it("flags environment reviewers referencing an unknown team", () => {
 		const cfg = baseConfig();
-		cfg.repos[0].environments = [
+		repoEntry(cfg).environments = [
 			{ name: "prod", requiredReviewerTeamSlugs: ["ghosts"] },
 		];
 		const issues = validateCrossRefs(cfg, {});
 		expect(issues).toHaveLength(1);
-		expect(issues[0].path).toBe("repos.r.environments.prod");
+		expect(issues[0]?.path).toBe("repos.r.environments.prod");
 	});
 
 	it("flags a branch pattern owned by multiple rulesets", () => {
@@ -74,7 +96,7 @@ describe("validateCrossRefs", () => {
 		cfg.rulesets = [mainRuleset("a"), mainRuleset("b")];
 		const issues = validateCrossRefs(cfg, {});
 		expect(issues).toHaveLength(1);
-		expect(issues[0].message).toMatch(/appears in multiple rulesets \(a, b\)/);
+		expect(issues[0]?.message).toMatch(/appears in multiple rulesets \(a, b\)/);
 	});
 
 	it("flags a label defined in more than one group", () => {
@@ -84,7 +106,7 @@ describe("validateCrossRefs", () => {
 		};
 		const issues = validateCrossRefs(baseConfig(), labelGroups);
 		expect(issues).toHaveLength(1);
-		expect(issues[0].path).toBe("labels.dup");
+		expect(issues[0]?.path).toBe("labels.dup");
 	});
 
 	it("warns when ruleset and branch protection require different status checks", () => {
@@ -93,19 +115,41 @@ describe("validateCrossRefs", () => {
 			{
 				...mainRuleset("org-main"),
 				rules: {
+					...defaultRules(),
 					requiredStatusChecks: {
-						requiredChecks: [{ context: "build" }],
+						enabled: true,
+						requiredChecks: [{ context: "ci" }],
 					},
 				},
 			},
 		];
-		cfg.repos[0].branchProtection = {
+		repoEntry(cfg).branchProtection = {
 			main: { requiredStatusChecks: ["test"] },
 		};
 		const issues = validateCrossRefs(cfg, {});
 		expect(issues).toHaveLength(1);
-		expect(issues[0].severity).toBe("warning");
-		expect(issues[0].message).toMatch(/different required status checks/);
+		expect(issues[0]?.severity).toBe("warning");
+		expect(issues[0]?.message).toMatch(/different required status checks/);
+	});
+
+	it("passes when branch protection uses an acceptAnyOf CI context", () => {
+		const cfg = baseConfig();
+		cfg.rulesets = [
+			{
+				...mainRuleset("org-main"),
+				rules: {
+					...defaultRules(),
+					requiredStatusChecks: {
+						enabled: true,
+						acceptAnyOf: ["ci", "build", "test"],
+					},
+				},
+			},
+		];
+		repoEntry(cfg).branchProtection = {
+			main: { requiredStatusChecks: ["build"] },
+		};
+		expect(validateCrossRefs(cfg, {})).toEqual([]);
 	});
 
 	it("passes when ruleset and branch protection share the same status checks", () => {
@@ -114,14 +158,16 @@ describe("validateCrossRefs", () => {
 			{
 				...mainRuleset("org-main"),
 				rules: {
+					...defaultRules(),
 					requiredStatusChecks: {
-						requiredChecks: [{ context: "build" }],
+						enabled: true,
+						requiredChecks: [{ context: "ci" }],
 					},
 				},
 			},
 		];
-		cfg.repos[0].branchProtection = {
-			main: { requiredStatusChecks: ["build"] },
+		repoEntry(cfg).branchProtection = {
+			main: { requiredStatusChecks: ["ci"] },
 		};
 		expect(validateCrossRefs(cfg, {})).toEqual([]);
 	});
@@ -136,13 +182,15 @@ describe("validateCrossRefs", () => {
 					repositoryName: { includes: ["other-repo"], excludes: [] },
 				},
 				rules: {
+					...defaultRules(),
 					requiredStatusChecks: {
-						requiredChecks: [{ context: "build" }],
+						enabled: true,
+						requiredChecks: [{ context: "ci" }],
 					},
 				},
 			},
 		];
-		cfg.repos[0].branchProtection = {
+		repoEntry(cfg).branchProtection = {
 			main: { requiredStatusChecks: ["test"] },
 		};
 		expect(validateCrossRefs(cfg, {})).toEqual([]);
@@ -154,18 +202,20 @@ describe("validateCrossRefs", () => {
 			{
 				...mainRuleset("org-main"),
 				rules: {
+					...defaultRules(),
 					requiredStatusChecks: {
-						requiredChecks: [{ context: "build" }],
+						enabled: true,
+						requiredChecks: [{ context: "ci" }],
 					},
 				},
 			},
 		];
-		cfg.repos[0].branchProtection = {
+		repoEntry(cfg).branchProtection = {
 			"refs/heads/main": { requiredStatusChecks: ["test"] },
 		};
 		const issues = validateCrossRefs(cfg, {});
 		expect(issues).toHaveLength(1);
-		expect(issues[0].severity).toBe("warning");
+		expect(issues[0]?.severity).toBe("warning");
 	});
 
 	it("does not flag duplicate patterns across disjoint repository scopes", () => {
