@@ -6,6 +6,7 @@ import {
 } from "@pulumi/pulumi";
 import type { ResolvedRepoConfig, TeamResourceMap } from "@/types";
 import { createBranchProtection } from "./branch";
+import { createCodeowners } from "./codeowners";
 import { createEnvironments } from "./environments";
 import { createLabels } from "./labels";
 
@@ -37,6 +38,8 @@ export default class OrgRepository extends ComponentResource {
 			labels,
 			squashMergeCommitTitle,
 			squashMergeCommitMessage,
+			defaultBranch,
+			codeownersContent,
 		} = config;
 
 		const allowSquashMerge = mergeStrategies.includes("squash");
@@ -125,6 +128,18 @@ export default class OrgRepository extends ComponentResource {
 			if (labels && Object.keys(labels).length > 0) {
 				createLabels({ resourcePrefix: name, labels, repo }, { parent: this });
 			}
+
+			createCodeowners(
+				name,
+				repo,
+				defaultBranch,
+				codeownersContent,
+				autoInit ?? false,
+				{
+					parent: this,
+					dependsOn: [repo],
+				},
+			);
 		}
 
 		this.registerOutputs();

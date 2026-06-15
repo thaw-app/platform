@@ -1,17 +1,67 @@
 import github from "@pulumi/github";
-import type { RulesetConfig } from "@/types";
+import type { RulesetConfig, RulesetRules } from "@/types";
 
-// Rulesets are managed as org-wide rules (repositoryName: ["~ALL"]) so they
-// apply uniformly across every repository without per-repo configuration.
+// Org-wide rulesets apply uniformly (~ALL repos). Per-repo branch protection is
+// intentionally avoided when the org ruleset covers enforcement; use
+// repos.yaml branchProtection only for repo-specific exceptions.
 //
-// Per-repo ruleset exceptions (e.g. stricter rules for a specific repo) are
-// intentionally handled through the GitHub UI rather than in code — they are
-// rare enough that the drift risk is acceptable, and keeping them out of config
-// avoids complexity in the reconciliation layer.
-//
-// Per-repo *branch protection* (github.BranchProtection) is still managed in
-// code via repos.yaml → branchProtection, for cases that rulesets can't cover
-// (e.g. required reviewers by team on a specific repo).
+// GitHub organization rulesets require a Team or Enterprise org plan (404 on Free).
+// Gate creation with the enableRulesets stack config until the org is upgraded.
+
+function toPulumiRules(
+	rules: RulesetRules,
+): github.types.input.OrganizationRulesetRules {
+	const pullRequest = rules.pullRequest
+		? {
+				...rules.pullRequest,
+				allowedMergeMethods: rules.pullRequest.allowedMergeMethods,
+				requiredReviewThreadResolution:
+					rules.pullRequest.requiredReviewThreadResolution,
+			}
+		: undefined;
+
+	const pulumiRules: Record<string, unknown> = {
+		creation: rules.creation,
+		update: rules.update,
+		deletion: rules.deletion,
+		nonFastForward: rules.nonFastForward,
+		requiredLinearHistory: rules.requiredLinearHistory,
+		requiredSignatures: rules.requiredSignatures,
+		copilotCodeReview: rules.copilotCodeReview,
+		pullRequest,
+	};
+
+	if (rules.requiredStatusChecks?.enabled) {
+		const { requiredChecks, acceptAnyOf, ...rest } = rules.requiredStatusChecks;
+		// GitHub treats every required check as mandatory (AND). acceptAnyOf is
+		// org-config convention only — use per-repo branchProtection to pin a name.
+		const checks = requiredChecks ?? [];
+		if (checks.length > 0) {
+			pulumiRules.requiredStatusChecks = {
+				requiredChecks: checks,
+				strictRequiredStatusChecksPolicy:
+					rest.strictRequiredStatusChecksPolicy ?? false,
+				doNotEnforceOnCreate: rest.doNotEnforceOnCreate ?? false,
+			};
+		} else if (acceptAnyOf?.length) {
+			// enabled + acceptAnyOf: reviews/linear-history still apply; check names
+			// are validated in src/setup/validate.ts, not enforced org-wide here.
+		}
+	}
+
+	if (rules.requiredCodeScanning?.enabled) {
+		pulumiRules.requiredCodeScanning = {
+			requiredCodeScanningTools:
+				rules.requiredCodeScanning.requiredCodeScanningTools ?? [],
+		};
+	}
+
+	// mergeQueue and requiredDeployments are supported on RepositoryRuleset only
+	// in @pulumi/github — org rulesets must enable merge queue via the GitHub UI.
+
+	return pulumiRules;
+}
+
 export function createRulesets(
 	rulesets: RulesetConfig[],
 ): github.OrganizationRuleset[] {
@@ -34,21 +84,7 @@ export function createRulesets(
 						excludes: conditions.repositoryName?.excludes ?? [],
 					},
 				},
-				rules: {
-					requiredLinearHistory: rules.requiredLinearHistory,
-					deletion: rules.deletion,
-					nonFastForward: rules.nonFastForward,
-					pullRequest: rules.pullRequest,
-					...(rules.requiredStatusChecks
-						? {
-								requiredStatusChecks: {
-									...rules.requiredStatusChecks,
-									requiredChecks:
-										rules.requiredStatusChecks.requiredChecks ?? [],
-								},
-							}
-						: {}),
-				},
+				rules: toPulumiRules(rules),
 			});
 		});
 }
