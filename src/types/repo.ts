@@ -115,6 +115,8 @@ export interface ResolvedRepoConfig
 	resolvedBranchProtection: Record<string, BranchProtectionEntry>;
 	squashMergeCommitTitle: SquashMergeCommitTitle;
 	squashMergeCommitMessage: SquashMergeCommitMessage;
+	defaultBranch: string;
+	codeownersContent: string;
 }
 
 export type RepoVisibility = v.InferOutput<typeof RepoVisibilitySchema>;

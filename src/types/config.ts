@@ -73,20 +73,82 @@ const RulesetPullRequestSchema = v.strictObject({
 	dismissStaleReviewsOnPush: v.optional(v.boolean()),
 	requireCodeOwnerReview: v.optional(v.boolean()),
 	requireLastPushApproval: v.optional(v.boolean()),
+	requiredReviewThreadResolution: v.optional(v.boolean()),
+	allowedMergeMethods: v.optional(
+		v.array(v.picklist(["merge", "squash", "rebase"])),
+	),
 });
 
-const RulesetRequiredStatusChecksSchema = v.strictObject({
-	requiredChecks: v.optional(v.array(v.strictObject({ context: v.string() }))),
-	strictRequiredStatusChecksPolicy: v.optional(v.boolean()),
+const RulesetRequiredStatusChecksSchema = v.pipe(
+	v.strictObject({
+		enabled: v.boolean(),
+		requiredChecks: v.optional(
+			v.array(v.strictObject({ context: v.string() })),
+		),
+		acceptAnyOf: v.optional(v.array(v.string())),
+		strictRequiredStatusChecksPolicy: v.optional(v.boolean()),
+		doNotEnforceOnCreate: v.optional(v.boolean()),
+	}),
+	v.rawCheck(({ dataset, addIssue }) => {
+		if (!dataset.typed || !dataset.value.enabled) return;
+		const { requiredChecks, acceptAnyOf } = dataset.value;
+		const hasChecks = (requiredChecks?.length ?? 0) > 0;
+		const hasAnyOf = (acceptAnyOf?.length ?? 0) > 0;
+		if (hasChecks === hasAnyOf) {
+			addIssue({
+				message: hasChecks
+					? "requiredStatusChecks: set requiredChecks or acceptAnyOf, not both"
+					: "requiredStatusChecks: enabled requires requiredChecks or acceptAnyOf",
+			});
+		}
+	}),
+);
+
+const RulesetCopilotCodeReviewSchema = v.strictObject({
+	reviewDraftPullRequests: v.boolean(),
+	reviewOnPush: v.boolean(),
 });
 
-const RulesetRulesSchema = v.strictObject({
-	requiredLinearHistory: v.optional(v.boolean()),
-	deletion: v.optional(v.boolean()),
-	nonFastForward: v.optional(v.boolean()),
-	pullRequest: v.optional(RulesetPullRequestSchema),
-	requiredStatusChecks: v.optional(RulesetRequiredStatusChecksSchema),
+const RulesetRequiredCodeScanningSchema = v.strictObject({
+	enabled: v.boolean(),
+	requiredCodeScanningTools: v.optional(
+		v.array(
+			v.strictObject({
+				tool: v.string(),
+				alertsThreshold: v.string(),
+				securityAlertsThreshold: v.string(),
+			}),
+		),
+	),
 });
+
+const RulesetMergeQueueSchema = v.strictObject({
+	enabled: v.boolean(),
+	mergeMethod: v.optional(v.picklist(["MERGE", "SQUASH", "REBASE"])),
+	groupingStrategy: v.optional(v.picklist(["ALLGREEN", "HEADGREEN"])),
+});
+
+const RulesetRequiredDeploymentsSchema = v.strictObject({
+	enabled: v.boolean(),
+	requiredDeploymentEnvironments: v.optional(v.array(v.string())),
+});
+
+export const RulesetRulesSchema = v.strictObject({
+	creation: v.boolean(),
+	update: v.boolean(),
+	deletion: v.boolean(),
+	nonFastForward: v.boolean(),
+	requiredLinearHistory: v.boolean(),
+	requiredSignatures: v.boolean(),
+	copilotCodeReview: RulesetCopilotCodeReviewSchema,
+	pullRequest: RulesetPullRequestSchema,
+	requiredStatusChecks: RulesetRequiredStatusChecksSchema,
+	requiredCodeScanning: RulesetRequiredCodeScanningSchema,
+	mergeQueue: RulesetMergeQueueSchema,
+	requiredDeployments: RulesetRequiredDeploymentsSchema,
+});
+
+export type RulesetRules = v.InferOutput<typeof RulesetRulesSchema>;
 
 const RulesetConditionsSchema = v.strictObject({
 	refName: v.strictObject({
@@ -142,6 +204,7 @@ export const InfraConfigSchema = v.object({
 	repos: ReposArraySchema,
 	rulesets: RulesetsArraySchema,
 	teams: TeamsConfigSchema,
+	codeownersContent: v.string(),
 });
 
 export type InfraConfig = v.InferOutput<typeof InfraConfigSchema>;
