@@ -10,6 +10,7 @@
 import { toJsonSchema } from "@valibot/to-json-schema";
 import type { BaseIssue, BaseSchema } from "valibot";
 import {
+	CodeownersFileSchema,
 	LabelGroupsSchema,
 	MembersFileSchema,
 	OrgConfigSchema,
@@ -25,6 +26,7 @@ const OUT_DIR = `${import.meta.dir}/../config/schema`;
 
 // Each entry maps a `config/*.yaml` file to the schema that validates it.
 const targets: Record<string, AnySchema> = {
+	codeowners: CodeownersFileSchema,
 	org: OrgConfigSchema,
 	repos: ReposFileSchema,
 	rulesets: RulesetsFileSchema,

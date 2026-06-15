@@ -198,6 +198,10 @@ export const RulesetsFileSchema = v.pipe(
 	}),
 );
 
+export const CodeownersFileSchema = v.strictObject({
+	content: v.string(),
+});
+
 export const InfraConfigSchema = v.object({
 	org: OrgConfigSchema,
 	labels: LabelSetSchema,

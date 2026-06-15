@@ -13,7 +13,8 @@ import {
 } from "@/setup";
 
 export default async function setupOrg() {
-	const { org, repos, teams, rulesets, labels } = initConfig();
+	const { org, repos, teams, rulesets, labels, codeownersContent } =
+		initConfig();
 	const { defaults, organization } = org;
 
 	const pulumiConfig = new pulumi.Config();
@@ -35,6 +36,7 @@ export default async function setupOrg() {
 			teamAccess,
 			labels,
 			organization,
+			codeownersContent,
 		});
 		new OrgRepository(resolved.name, resolved, teamResources); // NOSONAR
 	}
