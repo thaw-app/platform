@@ -191,18 +191,42 @@ describe("OrgRepository", () => {
 		new OrgRepository(
 			"r",
 			resolvedRepo({
+				autoInit: true,
 				codeownersContent: "* @acme-org/maintainers\n",
 			}),
 			{},
 		);
 		await settle();
 
+		const branch = first(findByType("github:index/branch:Branch"));
+		expect(branch.inputs.branch).toBe("main");
+
 		const file = first(
 			findByType("github:index/repositoryFile:RepositoryFile"),
 		);
 		expect(file.inputs.file).toBe(".github/CODEOWNERS");
 		expect(file.inputs.content).toBe("* @acme-org/maintainers");
-		expect(file.inputs.autocreateBranch).toBe(true);
+		expect(file.inputs.overwriteOnCreate).toBe(true);
+		expect(file.inputs.autocreateBranch).toBeUndefined();
+	});
+
+	it("syncs CODEOWNERS without Branch when autoInit is false", async () => {
+		new OrgRepository(
+			"r",
+			resolvedRepo({
+				autoInit: false,
+				codeownersContent: "* @acme-org/maintainers\n",
+			}),
+			{},
+		);
+		await settle();
+
+		expect(findByType("github:index/branch:Branch")).toHaveLength(0);
+		const file = first(
+			findByType("github:index/repositoryFile:RepositoryFile"),
+		);
+		expect(file.inputs.overwriteOnCreate).toBe(true);
+		expect(file.inputs.autocreateBranch).toBeUndefined();
 	});
 });
 
