@@ -1,14 +1,17 @@
-import { labels, org, repos, rulesets, teams } from "@config/index";
+import { labels, members, org, repos, rulesets, teams } from "@config/index";
 import * as v from "valibot";
 import {
 	type InfraConfig,
 	LabelGroupsSchema,
+	MembersFileSchema,
 	OrgConfigSchema,
 	ReposFileSchema,
 	RulesetsFileSchema,
-	TeamsConfigSchema,
+	TeamsFileSchema,
 } from "@/types";
-import { validateCrossRefs } from "./validate";
+import { mergeTeamMemberships } from "./members";
+import type { ValidationIssue } from "./types";
+import { validateCrossRefs, validateMemberRefs } from "./validate";
 
 type Schema<T> = v.BaseSchema<unknown, T, v.BaseIssue<unknown>>;
 
@@ -26,6 +29,18 @@ function parse<T>(schema: Schema<T>, data: unknown, file: string): T {
 	return output;
 }
 
+function reportIssues(issues: ValidationIssue[]) {
+	const errors = issues.filter((i) => i.severity === "error");
+	const warnings = issues.filter((i) => i.severity === "warning");
+	for (const w of warnings) {
+		console.warn(`config warning — ${w.path}: ${w.message}`);
+	}
+	if (errors.length > 0) {
+		const body = errors.map((i) => `- ${i.path}: ${i.message}`).join("\n");
+		throw new Error(`Config validation failed:\n${body}`);
+	}
+}
+
 export function loadConfig(): InfraConfig {
 	const labelGroups = parse(LabelGroupsSchema, labels, "labels.yaml");
 	const parsedOrg = parse(OrgConfigSchema, org, "org.yaml");
@@ -35,7 +50,13 @@ export function loadConfig(): InfraConfig {
 		rulesets,
 		"rulesets.yaml",
 	);
-	const parsedTeams = parse(TeamsConfigSchema, teams, "teams.yaml");
+	const parsedTeamsFile = parse(TeamsFileSchema, teams, "teams.yaml");
+	const parsedMembers = parse(MembersFileSchema, members, "members.yaml");
+
+	const memberIssues = validateMemberRefs(parsedTeamsFile, parsedMembers);
+	reportIssues(memberIssues);
+
+	const parsedTeams = mergeTeamMemberships(parsedTeamsFile, parsedMembers);
 
 	const config: InfraConfig = {
 		org: parsedOrg,
@@ -46,10 +67,7 @@ export function loadConfig(): InfraConfig {
 	};
 
 	const issues = validateCrossRefs(config, labelGroups);
-	if (issues.length > 0) {
-		const body = issues.map((i) => `- ${i.path}: ${i.message}`).join("\n");
-		throw new Error(`Config validation failed:\n${body}`);
-	}
+	reportIssues(issues);
 
 	return config;
 }

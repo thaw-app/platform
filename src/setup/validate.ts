@@ -1,7 +1,40 @@
 import { groupBy, uniq } from "es-toolkit";
-import type { InfraConfig, LabelGroups } from "@/types";
+import type {
+	InfraConfig,
+	LabelGroups,
+	MembersFile,
+	RulesetConfig,
+	TeamsFile,
+} from "@/types";
 import type { ValidationIssue } from "./types";
 import { issue, normalizeBranchPattern } from "./utils";
+
+type RepoCondition = { includes: string[]; excludes: string[] };
+
+function repoCondition(r: RulesetConfig): RepoCondition {
+	return {
+		includes: r.conditions.repositoryName?.includes ?? ["~ALL"],
+		excludes: r.conditions.repositoryName?.excludes ?? [],
+	};
+}
+
+// Conservative overlap test: ~ALL overlaps everything; otherwise the
+// include lists must intersect. Excludes are ignored (may report a
+// theoretical overlap that excludes actually prevent — acceptable:
+// false positive here is a warning to a human, not a failure).
+function repoSetsOverlap(a: RepoCondition, b: RepoCondition): boolean {
+	if (a.includes.includes("~ALL") || b.includes.includes("~ALL")) return true;
+	return a.includes.some((name) => b.includes.includes(name));
+}
+
+function rulesetAppliesToRepo(r: RulesetConfig, repoName: string): boolean {
+	const cond = repoCondition(r);
+	if (cond.excludes.includes(repoName)) return false;
+	if (cond.includes.includes("~ALL") || cond.includes.includes(repoName))
+		return true;
+	// Wildcard patterns other than ~ALL: conservative match
+	return cond.includes.some((p) => p.includes("*"));
+}
 
 function validateTeamRefs(config: InfraConfig): ValidationIssue[] {
 	const { repos, teams } = config;
@@ -38,6 +71,21 @@ function validateTeamRefs(config: InfraConfig): ValidationIssue[] {
 	];
 }
 
+export function validateMemberRefs(
+	teamsFile: TeamsFile,
+	membersFile: MembersFile,
+): ValidationIssue[] {
+	const teamSlugs = new Set(teamsFile.teams.map((t) => t.slug));
+
+	return membersFile.members.flatMap((member, i) =>
+		member.teams
+			.filter(({ slug }) => !teamSlugs.has(slug))
+			.map(({ slug }, j) =>
+				issue(`members.${i}.teams.${j}.slug`, `unknown team "${slug}"`),
+			),
+	);
+}
+
 function validateRulesetPatterns(config: InfraConfig): ValidationIssue[] {
 	const { org, rulesets } = config;
 	const defaultBranch = org.defaults.defaultBranch;
@@ -48,20 +96,82 @@ function validateRulesetPatterns(config: InfraConfig): ValidationIssue[] {
 			.flatMap((r) =>
 				r.conditions.refName.includes.map((raw) => ({
 					pattern: normalizeBranchPattern(raw, defaultBranch),
-					id: r.id,
+					ruleset: r,
 				})),
 			),
 		(x) => x.pattern,
 	);
 
-	return Object.entries(patternOwners)
-		.filter(([, owners]) => owners.length > 1)
-		.map(([pattern, owners]) =>
-			issue(
-				"rulesets",
-				`branch pattern "${pattern}" appears in multiple rulesets (${uniq(owners.map((o) => o.id)).join(", ")})`,
+	return Object.entries(patternOwners).flatMap(([pattern, entries]) => {
+		const rulesetsAtPattern = uniq(entries.map((e) => e.ruleset));
+		if (rulesetsAtPattern.length <= 1) return [];
+
+		const conflicting = rulesetsAtPattern.filter((r) =>
+			rulesetsAtPattern.some(
+				(other) =>
+					other.id !== r.id &&
+					repoSetsOverlap(repoCondition(r), repoCondition(other)),
 			),
 		);
+
+		if (conflicting.length <= 1) return [];
+
+		return [
+			issue(
+				"rulesets",
+				`branch pattern "${pattern}" appears in multiple rulesets (${uniq(conflicting.map((r) => r.id)).join(", ")})`,
+			),
+		];
+	});
+}
+
+function validateRulesetBranchProtectionOverlap(
+	config: InfraConfig,
+): ValidationIssue[] {
+	const { org, repos, rulesets } = config;
+	const defaultBranch = org.defaults.defaultBranch;
+
+	const activeBranchRulesets = rulesets.filter(
+		(r) => r.target === "branch" && r.enforcement !== "disabled",
+	);
+
+	return activeBranchRulesets.flatMap((r) => {
+		const rulesetPatterns = r.conditions.refName.includes.map((raw) =>
+			normalizeBranchPattern(raw, defaultBranch),
+		);
+		const rulesetContexts =
+			r.rules.requiredStatusChecks?.requiredChecks?.map((c) => c.context) ?? [];
+
+		return repos.flatMap((repo) => {
+			if (!rulesetAppliesToRepo(r, repo.name) || !repo.branchProtection) {
+				return [];
+			}
+
+			return Object.entries(repo.branchProtection).flatMap(([pattern, bp]) => {
+				// Exact match after normalization only — glob-pattern overlap
+				// (e.g. BP release/* vs ruleset release/v*) is out of scope.
+				const normalizedBp = normalizeBranchPattern(pattern, defaultBranch);
+				if (!rulesetPatterns.includes(normalizedBp)) return [];
+
+				const bpContexts = bp.requiredStatusChecks ?? [];
+				if (rulesetContexts.length === 0 || bpContexts.length === 0) {
+					return [];
+				}
+
+				const rulesetSorted = [...rulesetContexts].sort();
+				const bpSorted = [...bpContexts].sort();
+				if (rulesetSorted.join() === bpSorted.join()) return [];
+
+				return [
+					issue(
+						`repos.${repo.name}.branchProtection.${pattern}`,
+						`org ruleset "${r.id}" also targets "${pattern}" with different required status checks (ruleset: [${rulesetSorted.join(", ")}], repo: [${bpSorted.join(", ")}]); PRs must satisfy the union of both`,
+						"warning",
+					),
+				];
+			});
+		});
+	});
 }
 
 function validateLabelGroups(labelGroups: LabelGroups): ValidationIssue[] {
@@ -89,6 +199,7 @@ export function validateCrossRefs(
 	return [
 		...validateTeamRefs(config),
 		...validateRulesetPatterns(config),
+		...validateRulesetBranchProtectionOverlap(config),
 		...validateLabelGroups(labelGroups),
 	];
 }

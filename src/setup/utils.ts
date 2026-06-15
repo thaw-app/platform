@@ -1,3 +1,4 @@
+import type { RepoConfig } from "@/types";
 import type { ValidationIssue } from "./types";
 
 export function normalizeBranchPattern(
@@ -25,6 +26,32 @@ export function compact<T extends Record<string, unknown>>(obj: T): Partial<T> {
 	) as Partial<T>;
 }
 
-export function issue(path: string, message: string): ValidationIssue {
-	return { path, message };
+export function issue(
+	path: string,
+	message: string,
+	severity: ValidationIssue["severity"] = "error",
+): ValidationIssue {
+	return { path, message, severity };
+}
+
+/**
+ * When team creation is disabled (enableTeams=false), environments that
+ * require reviewer teams cannot be provisioned. Surface every offender at
+ * once, before any resource is created.
+ */
+export function assertReviewerTeamsCreatable(
+	repos: RepoConfig[],
+	enableTeams: boolean,
+): void {
+	if (enableTeams) return;
+	const offenders = repos.flatMap((repo) =>
+		(repo.environments ?? [])
+			.filter((env) => (env.requiredReviewerTeamSlugs ?? []).length > 0)
+			.map((env) => `repos.${repo.name}.environments.${env.name}`),
+	);
+	if (offenders.length > 0) {
+		throw new Error(
+			`enableTeams is false, but these environments require reviewer teams:\n${offenders.map((o) => `- ${o}`).join("\n")}`,
+		);
+	}
 }
