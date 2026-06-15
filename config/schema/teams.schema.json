@@ -18,23 +18,6 @@
 					"privacy": {
 						"enum": ["secret", "closed"],
 						"type": "string"
-					},
-					"members": {
-						"type": "array",
-						"items": {
-							"type": "object",
-							"properties": {
-								"username": {
-									"type": "string"
-								},
-								"role": {
-									"enum": ["member", "maintainer"],
-									"type": "string"
-								}
-							},
-							"required": ["username", "role"],
-							"additionalProperties": false
-						}
 					}
 				},
 				"required": ["slug", "name"],

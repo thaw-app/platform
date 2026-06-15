@@ -1,0 +1,38 @@
+{
+	"type": "object",
+	"properties": {
+		"members": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"properties": {
+					"username": {
+						"type": "string"
+					},
+					"teams": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"slug": {
+									"type": "string"
+								},
+								"role": {
+									"enum": ["member", "maintainer"],
+									"type": "string"
+								}
+							},
+							"required": ["slug", "role"],
+							"additionalProperties": false
+						}
+					}
+				},
+				"required": ["username", "teams"],
+				"additionalProperties": false
+			}
+		}
+	},
+	"required": ["members"],
+	"additionalProperties": false,
+	"$schema": "http://json-schema.org/draft-07/schema#"
+}
