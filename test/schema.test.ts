@@ -2,11 +2,12 @@ import { describe, expect, it } from "bun:test";
 import * as v from "valibot";
 import {
 	LabelDefinitionSchema,
+	MembersFileSchema,
 	OrgConfigSchema,
 	RepoConfigSchema,
 	ReposFileSchema,
 	RulesetsFileSchema,
-	TeamsConfigSchema,
+	TeamsFileSchema,
 } from "@/types";
 
 describe("RepoConfigSchema", () => {
@@ -106,7 +107,7 @@ describe("duplicate detection", () => {
 
 	it("rejects duplicate team slugs", () => {
 		const team = (slug: string) => ({ slug, name: slug });
-		const r = v.safeParse(TeamsConfigSchema, {
+		const r = v.safeParse(TeamsFileSchema, {
 			teams: [team("eng"), team("eng")],
 			repoAccess: {},
 		});
@@ -114,6 +115,21 @@ describe("duplicate detection", () => {
 		if (!r.success) {
 			expect(
 				r.issues.some((i) => /duplicate team slug "eng"/.test(i.message)),
+			).toBe(true);
+		}
+	});
+
+	it("rejects duplicate usernames in members.yaml", () => {
+		const r = v.safeParse(MembersFileSchema, {
+			members: [
+				{ username: "alice", teams: [{ slug: "eng", role: "member" }] },
+				{ username: "alice", teams: [{ slug: "eng", role: "maintainer" }] },
+			],
+		});
+		expect(r.success).toBe(false);
+		if (!r.success) {
+			expect(
+				r.issues.some((i) => /duplicate username "alice"/.test(i.message)),
 			).toBe(true);
 		}
 	});

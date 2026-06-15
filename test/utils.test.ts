@@ -1,5 +1,10 @@
 import { describe, expect, it } from "bun:test";
-import { normalizeActors, normalizeBranchPattern } from "@/setup";
+import {
+	assertReviewerTeamsCreatable,
+	normalizeActors,
+	normalizeBranchPattern,
+} from "@/setup";
+import type { RepoConfig } from "@/types";
 
 describe("normalizeBranchPattern", () => {
 	it("expands ~DEFAULT_BRANCH to the default branch", () => {
@@ -39,5 +44,69 @@ describe("normalizeActors", () => {
 
 	it("throws for whitespace-only actors", () => {
 		expect(() => normalizeActors(["  "], "acme")).toThrow(/invalid actor/);
+	});
+});
+
+describe("assertReviewerTeamsCreatable", () => {
+	const repo = (overrides: Partial<RepoConfig> = {}): RepoConfig => ({
+		name: "a",
+		description: "d",
+		...overrides,
+	});
+
+	it("allows reviewer-team environments when teams are enabled", () => {
+		expect(() =>
+			assertReviewerTeamsCreatable(
+				[
+					repo({
+						environments: [
+							{ name: "prod", requiredReviewerTeamSlugs: ["maintainers"] },
+						],
+					}),
+				],
+				true,
+			),
+		).not.toThrow();
+	});
+
+	it("allows empty environments when teams are disabled", () => {
+		expect(() => assertReviewerTeamsCreatable([repo()], false)).not.toThrow();
+	});
+
+	it("allows environments with empty reviewer slugs when teams are disabled", () => {
+		expect(() =>
+			assertReviewerTeamsCreatable(
+				[
+					repo({
+						environments: [{ name: "prod", requiredReviewerTeamSlugs: [] }],
+					}),
+				],
+				false,
+			),
+		).not.toThrow();
+	});
+
+	it("throws for all offending environments when teams are disabled", () => {
+		expect(() =>
+			assertReviewerTeamsCreatable(
+				[
+					repo({
+						name: "a",
+						environments: [
+							{ name: "prod", requiredReviewerTeamSlugs: ["maintainers"] },
+						],
+					}),
+					repo({
+						name: "b",
+						environments: [
+							{ name: "staging", requiredReviewerTeamSlugs: ["reviewers"] },
+						],
+					}),
+				],
+				false,
+			),
+		).toThrow(
+			/repos\.a\.environments\.prod[\s\S]*repos\.b\.environments\.staging/,
+		);
 	});
 });

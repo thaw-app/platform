@@ -86,4 +86,106 @@ describe("validateCrossRefs", () => {
 		expect(issues).toHaveLength(1);
 		expect(issues[0].path).toBe("labels.dup");
 	});
+
+	it("warns when ruleset and branch protection require different status checks", () => {
+		const cfg = baseConfig();
+		cfg.rulesets = [
+			{
+				...mainRuleset("org-main"),
+				rules: {
+					requiredStatusChecks: {
+						requiredChecks: [{ context: "build" }],
+					},
+				},
+			},
+		];
+		cfg.repos[0].branchProtection = {
+			main: { requiredStatusChecks: ["test"] },
+		};
+		const issues = validateCrossRefs(cfg, {});
+		expect(issues).toHaveLength(1);
+		expect(issues[0].severity).toBe("warning");
+		expect(issues[0].message).toMatch(/different required status checks/);
+	});
+
+	it("passes when ruleset and branch protection share the same status checks", () => {
+		const cfg = baseConfig();
+		cfg.rulesets = [
+			{
+				...mainRuleset("org-main"),
+				rules: {
+					requiredStatusChecks: {
+						requiredChecks: [{ context: "build" }],
+					},
+				},
+			},
+		];
+		cfg.repos[0].branchProtection = {
+			main: { requiredStatusChecks: ["build"] },
+		};
+		expect(validateCrossRefs(cfg, {})).toEqual([]);
+	});
+
+	it("ignores branch protection when ruleset repo condition excludes the repo", () => {
+		const cfg = baseConfig();
+		cfg.rulesets = [
+			{
+				...mainRuleset("scoped"),
+				conditions: {
+					refName: { includes: ["~DEFAULT_BRANCH"] },
+					repositoryName: { includes: ["other-repo"], excludes: [] },
+				},
+				rules: {
+					requiredStatusChecks: {
+						requiredChecks: [{ context: "build" }],
+					},
+				},
+			},
+		];
+		cfg.repos[0].branchProtection = {
+			main: { requiredStatusChecks: ["test"] },
+		};
+		expect(validateCrossRefs(cfg, {})).toEqual([]);
+	});
+
+	it("normalizes branch patterns before comparing ruleset and branch protection", () => {
+		const cfg = baseConfig();
+		cfg.rulesets = [
+			{
+				...mainRuleset("org-main"),
+				rules: {
+					requiredStatusChecks: {
+						requiredChecks: [{ context: "build" }],
+					},
+				},
+			},
+		];
+		cfg.repos[0].branchProtection = {
+			"refs/heads/main": { requiredStatusChecks: ["test"] },
+		};
+		const issues = validateCrossRefs(cfg, {});
+		expect(issues).toHaveLength(1);
+		expect(issues[0].severity).toBe("warning");
+	});
+
+	it("does not flag duplicate patterns across disjoint repository scopes", () => {
+		const cfg = baseConfig();
+		cfg.rulesets = [
+			{
+				...mainRuleset("a"),
+				conditions: {
+					refName: { includes: ["~DEFAULT_BRANCH"] },
+					repositoryName: { includes: ["repo-a"], excludes: [] },
+				},
+			},
+			{
+				...mainRuleset("b"),
+				conditions: {
+					refName: { includes: ["~DEFAULT_BRANCH"] },
+					repositoryName: { includes: ["repo-b"], excludes: [] },
+				},
+			},
+		];
+		expect(validateCrossRefs(cfg, {})).toEqual([]);
+	});
 });
