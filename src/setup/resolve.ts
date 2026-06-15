@@ -100,5 +100,7 @@ export function buildRepoConfig(
 		resolvedBranchProtection,
 		squashMergeCommitTitle: defaults.squashMergeCommitTitle,
 		squashMergeCommitMessage: defaults.squashMergeCommitMessage,
+		defaultBranch: defaults.defaultBranch,
+		codeownersContent: ctx.codeownersContent,
 	};
 }

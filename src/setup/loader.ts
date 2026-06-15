@@ -1,6 +1,15 @@
-import { labels, members, org, repos, rulesets, teams } from "@config/index";
+import {
+	codeowners,
+	labels,
+	members,
+	org,
+	repos,
+	rulesets,
+	teams,
+} from "@config/index";
 import * as v from "valibot";
 import {
+	CodeownersFileSchema,
 	type InfraConfig,
 	LabelGroupsSchema,
 	MembersFileSchema,
@@ -52,6 +61,11 @@ export function loadConfig(): InfraConfig {
 	);
 	const parsedTeamsFile = parse(TeamsFileSchema, teams, "teams.yaml");
 	const parsedMembers = parse(MembersFileSchema, members, "members.yaml");
+	const { content: codeownersContent } = parse(
+		CodeownersFileSchema,
+		codeowners,
+		"codeowners.yaml",
+	);
 
 	const memberIssues = validateMemberRefs(parsedTeamsFile, parsedMembers);
 	reportIssues(memberIssues);
@@ -64,6 +78,7 @@ export function loadConfig(): InfraConfig {
 		teams: parsedTeams,
 		rulesets: parsedRulesets,
 		labels: Object.assign({}, ...Object.values(labelGroups)),
+		codeownersContent,
 	};
 
 	const issues = validateCrossRefs(config, labelGroups);

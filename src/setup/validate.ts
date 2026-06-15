@@ -9,6 +9,28 @@ import type {
 import type { ValidationIssue } from "./types";
 import { issue, normalizeBranchPattern } from "./utils";
 
+function rulesetStatusContexts(r: RulesetConfig): string[] {
+	const checks = r.rules.requiredStatusChecks;
+	if (!checks?.enabled) return [];
+	if (checks.requiredChecks?.length) {
+		return checks.requiredChecks.map((c) => c.context);
+	}
+	return checks.acceptAnyOf ?? [];
+}
+
+function statusCheckSetsCompatible(
+	rulesetContexts: string[],
+	bpContexts: string[],
+): boolean {
+	if (rulesetContexts.length === 0 || bpContexts.length === 0) return true;
+	const rulesetSorted = [...rulesetContexts].sort();
+	const bpSorted = [...bpContexts].sort();
+	if (rulesetSorted.join() === bpSorted.join()) return true;
+	// acceptAnyOf: any listed name is valid; branch protection may pin one.
+	const rulesetSet = new Set(rulesetContexts);
+	return bpSorted.every((ctx) => rulesetSet.has(ctx));
+}
+
 type RepoCondition = { includes: string[]; excludes: string[] };
 
 function repoCondition(r: RulesetConfig): RepoCondition {
@@ -139,8 +161,7 @@ function validateRulesetBranchProtectionOverlap(
 		const rulesetPatterns = r.conditions.refName.includes.map((raw) =>
 			normalizeBranchPattern(raw, defaultBranch),
 		);
-		const rulesetContexts =
-			r.rules.requiredStatusChecks?.requiredChecks?.map((c) => c.context) ?? [];
+		const rulesetContexts = rulesetStatusContexts(r);
 
 		return repos.flatMap((repo) => {
 			if (!rulesetAppliesToRepo(r, repo.name) || !repo.branchProtection) {
@@ -158,9 +179,10 @@ function validateRulesetBranchProtectionOverlap(
 					return [];
 				}
 
+				if (statusCheckSetsCompatible(rulesetContexts, bpContexts)) return [];
+
 				const rulesetSorted = [...rulesetContexts].sort();
 				const bpSorted = [...bpContexts].sort();
-				if (rulesetSorted.join() === bpSorted.join()) return [];
 
 				return [
 					issue(

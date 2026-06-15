@@ -11,4 +11,5 @@ export interface RepoBuildContext {
 	teamAccess: TeamAccess[];
 	labels: LabelSet;
 	organization: string;
+	codeownersContent: string;
 }
