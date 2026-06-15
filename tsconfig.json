@@ -18,6 +18,5 @@
 		"noImplicitReturns": true,
 		"forceConsistentCasingInFileNames": true
 	},
-	"include": ["**/*.ts"],
-	"exclude": ["test/**"]
+	"include": ["**/*.ts"]
 }
