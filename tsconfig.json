@@ -1,6 +1,7 @@
 {
 	"compilerOptions": {
 		"strict": true,
+		"noUncheckedIndexedAccess": true,
 		"outDir": "bin",
 		"target": "es2020",
 		"module": "esnext",
@@ -17,5 +18,6 @@
 		"noImplicitReturns": true,
 		"forceConsistentCasingInFileNames": true
 	},
-	"include": ["**/*.ts"]
+	"include": ["**/*.ts"],
+	"exclude": ["test/**"]
 }
