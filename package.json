@@ -6,7 +6,7 @@
 		"check": "biome check",
 		"format": "biome check --write",
 		"test": "bun test",
-		"schema": "bun run scripts/gen-schema.ts",
+		"schema": "bun run scripts/generate_schema.ts && biome format --write config/schema",
 		"prepare": "husky"
 	},
 	"devDependencies": {
