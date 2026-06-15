@@ -24,9 +24,12 @@ export function createTeamMemberships(
 ): void {
 	for (const team of config.teams) {
 		const { slug, members } = team;
+		const teamResource = teamResources[slug];
+		if (!teamResource)
+			throw new Error(`Team membership references unknown team "${slug}"`);
 		for (const { username, role } of members ?? []) {
 			new github.TeamMembership(`${slug}-${username}`, {
-				teamId: teamResources[slug].id,
+				teamId: teamResource.id,
 				username,
 				role,
 			});
