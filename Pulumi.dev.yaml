@@ -1,5 +1,4 @@
 config:
-  github:owner: diazdesandi-org
-  github:token:
-    secure: AAABAAS57IU5NnDLdYW/hoC0YNj0ytoiIQ8fswXobssBXEGLUmoE8prJecOeo1a+VfcmlVRpR2777g5+3oJbKcZi7+C7mbgz
-  org-config:enableRulesets: "false"
+  github:owner: thaw-app
+  thaw-config:enableRulesets: "false"
+  thaw-config:enableTeams: "true"

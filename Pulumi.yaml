@@ -1,5 +1,5 @@
-name: org-config
-description: A minimal GitHub TypeScript Pulumi program.
+name: thaw-config
+description: A Pulumi program to manage Thaw organization configuration.
 runtime:
   name: bun
   options:
