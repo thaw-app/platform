@@ -1,5 +1,5 @@
 {
-	"name": "org-config",
+	"name": "thaw-platform",
 	"main": "index.ts",
 	"scripts": {
 		"typecheck": "tsc --noEmit",
