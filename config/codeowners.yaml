@@ -1,0 +1,5 @@
+# yaml-language-server: $schema=./schema/codeowners.schema.json
+# Deployed to .github/CODEOWNERS in every Pulumi-managed repository.
+# Edit this file once; run pulumi up to sync across the org.
+content: |
+  * @thaw-app/maintainers

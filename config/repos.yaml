@@ -1,7 +1,54 @@
 # yaml-language-server: $schema=./schema/repos.schema.json
+#
+# Pulumi-managed repositories for thaw-app.
+# Out of scope (manual admin, not listed here): Thaw, AXSwift
+#
+# Branch enforcement is org-wide via config/rulesets.yaml — do not duplicate
+# branchProtection here unless a repo needs an explicit exception.
 repos:
+  - name: website
+    description: Thaw project website and Sparkle appcast (GitHub Pages).
+    visibility: public
+    homepage: https://thaw-app.github.io/website/
+    topics:
+      - thaw
+      - macos
+      - menu-bar
+      - website
+      - github-pages
+      - documentation
+    mergeStrategies:
+      - squash
+    deleteBranchOnMerge: true
+    autoInit: false
+
+  - name: homebrew-tap
+    description: Homebrew tap formulas for Thaw releases.
+    visibility: public
+    topics:
+      - thaw
+      - macos
+      - homebrew
+      - homebrew-tap
+    mergeStrategies:
+      - squash
+    deleteBranchOnMerge: true
+    autoInit: false
+
+  - name: dot-github
+    description: Shared organization workflows, issue templates, and defaults.
+    visibility: public
+    topics:
+      - github-actions
+      - workflows
+      - templates
+    mergeStrategies:
+      - squash
+    deleteBranchOnMerge: true
+    autoInit: false
+
   - name: org-ci
-    description: A repository for organization-wide CI/CD workflows and automation scripts.
+    description: Organization-wide CI/CD workflows and automation scripts.
     visibility: public
     topics:
       - ci
@@ -12,85 +59,3 @@ repos:
       - squash
     deleteBranchOnMerge: true
     autoInit: false
-    branchProtection:
-      main:
-        requiredReviewCount: 1
-        requiredStatusChecks:
-          - build
-        requiredLinearHistory: true
-
-  - name: ctl
-    description: A repository for managing control logic and operations.
-    visibility: public
-    topics:
-      - macos
-      - swift
-      - cli
-      - automation
-      - menu-bar
-    mergeStrategies:
-      - squash
-    deleteBranchOnMerge: true
-    autoInit: false
-    branchProtection:
-      main:
-        requiredReviewCount: 1
-        requiredStatusChecks:
-          - build
-        requiredLinearHistory: true
-
-  - name: main-repo
-    description: Primary repository for product code and roadmap.
-    visibility: public
-    mergeStrategies:
-      - squash
-    deleteBranchOnMerge: true
-    autoInit: false
-    branchProtection:
-      main:
-        requiredReviewCount: 1
-        requiredStatusChecks:
-          - build
-        requiredLinearHistory: true
-
-  - name: dot-github
-    description: Shared organization workflows, issue templates, and defaults.
-    visibility: public
-    mergeStrategies:
-      - squash
-    deleteBranchOnMerge: true
-    autoInit: false
-    branchProtection:
-      main:
-        requiredReviewCount: 1
-        requiredStatusChecks:
-          - validate
-        requiredLinearHistory: true
-
-  - name: homebrew-tap
-    description: Homebrew tap formulas for organization releases.
-    visibility: public
-    mergeStrategies:
-      - squash
-    deleteBranchOnMerge: true
-    autoInit: false
-    branchProtection:
-      main:
-        requiredReviewCount: 1
-        requiredStatusChecks:
-          - test
-        requiredLinearHistory: true
-
-  - name: translations
-    description: Translation files for the organization.
-    visibility: public
-    mergeStrategies:
-      - squash
-    deleteBranchOnMerge: true
-    autoInit: false
-    branchProtection:
-      main:
-        requiredReviewCount: 1
-        requiredStatusChecks:
-          - test
-        requiredLinearHistory: true

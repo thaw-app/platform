@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=./schema/members.schema.json
+members:
+  - username: diazdesandi
+    teams:
+      - slug: maintainers
+        role: maintainer
+      - slug: contributors
+        role: member
+  - username: stonerl
+    teams:
+      - slug: maintainers
+        role: maintainer
+      - slug: contributors
+        role: member
+  - username: nightah
+    teams:
+      - slug: contributors
+        role: member
+      - slug: maintainers
+        role: member

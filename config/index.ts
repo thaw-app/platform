@@ -1,3 +1,4 @@
+export { default as codeowners } from "./codeowners.yaml";
 export { default as labels } from "./labels.yaml";
 export { default as members } from "./members.yaml";
 export { default as org } from "./org.yaml";

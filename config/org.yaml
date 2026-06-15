@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=./schema/org.schema.json
-owner: diazdesandi
-organization: diazdesandi-org
+owner: stonerl
+organization: thaw-app
 
 defaults:
   visibility: public
