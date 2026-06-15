@@ -71,7 +71,10 @@
 					"rules": {
 						"type": "object",
 						"properties": {
-							"requiredLinearHistory": {
+							"creation": {
+								"type": "boolean"
+							},
+							"update": {
 								"type": "boolean"
 							},
 							"deletion": {
@@ -79,6 +82,25 @@
 							},
 							"nonFastForward": {
 								"type": "boolean"
+							},
+							"requiredLinearHistory": {
+								"type": "boolean"
+							},
+							"requiredSignatures": {
+								"type": "boolean"
+							},
+							"copilotCodeReview": {
+								"type": "object",
+								"properties": {
+									"reviewDraftPullRequests": {
+										"type": "boolean"
+									},
+									"reviewOnPush": {
+										"type": "boolean"
+									}
+								},
+								"required": ["reviewDraftPullRequests", "reviewOnPush"],
+								"additionalProperties": false
 							},
 							"pullRequest": {
 								"type": "object",
@@ -94,6 +116,16 @@
 									},
 									"requireLastPushApproval": {
 										"type": "boolean"
+									},
+									"requiredReviewThreadResolution": {
+										"type": "boolean"
+									},
+									"allowedMergeMethods": {
+										"type": "array",
+										"items": {
+											"enum": ["merge", "squash", "rebase"],
+											"type": "string"
+										}
 									}
 								},
 								"required": [],
@@ -102,6 +134,9 @@
 							"requiredStatusChecks": {
 								"type": "object",
 								"properties": {
+									"enabled": {
+										"type": "boolean"
+									},
 									"requiredChecks": {
 										"type": "array",
 										"items": {
@@ -115,15 +150,104 @@
 											"additionalProperties": false
 										}
 									},
+									"acceptAnyOf": {
+										"type": "array",
+										"items": {
+											"type": "string"
+										}
+									},
 									"strictRequiredStatusChecksPolicy": {
+										"type": "boolean"
+									},
+									"doNotEnforceOnCreate": {
 										"type": "boolean"
 									}
 								},
-								"required": [],
+								"required": ["enabled"],
+								"additionalProperties": false
+							},
+							"requiredCodeScanning": {
+								"type": "object",
+								"properties": {
+									"enabled": {
+										"type": "boolean"
+									},
+									"requiredCodeScanningTools": {
+										"type": "array",
+										"items": {
+											"type": "object",
+											"properties": {
+												"tool": {
+													"type": "string"
+												},
+												"alertsThreshold": {
+													"type": "string"
+												},
+												"securityAlertsThreshold": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"tool",
+												"alertsThreshold",
+												"securityAlertsThreshold"
+											],
+											"additionalProperties": false
+										}
+									}
+								},
+								"required": ["enabled"],
+								"additionalProperties": false
+							},
+							"mergeQueue": {
+								"type": "object",
+								"properties": {
+									"enabled": {
+										"type": "boolean"
+									},
+									"mergeMethod": {
+										"enum": ["MERGE", "SQUASH", "REBASE"],
+										"type": "string"
+									},
+									"groupingStrategy": {
+										"enum": ["ALLGREEN", "HEADGREEN"],
+										"type": "string"
+									}
+								},
+								"required": ["enabled"],
+								"additionalProperties": false
+							},
+							"requiredDeployments": {
+								"type": "object",
+								"properties": {
+									"enabled": {
+										"type": "boolean"
+									},
+									"requiredDeploymentEnvironments": {
+										"type": "array",
+										"items": {
+											"type": "string"
+										}
+									}
+								},
+								"required": ["enabled"],
 								"additionalProperties": false
 							}
 						},
-						"required": [],
+						"required": [
+							"creation",
+							"update",
+							"deletion",
+							"nonFastForward",
+							"requiredLinearHistory",
+							"requiredSignatures",
+							"copilotCodeReview",
+							"pullRequest",
+							"requiredStatusChecks",
+							"requiredCodeScanning",
+							"mergeQueue",
+							"requiredDeployments"
+						],
 						"additionalProperties": false
 					}
 				},
