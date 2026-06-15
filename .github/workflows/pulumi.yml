@@ -44,7 +44,7 @@ jobs:
         uses: pulumi/actions@v7
         with:
           command: ${{ inputs.command }}
-          stack-name: diazdesandi/thaw-config
+          stack-name: diazdesandi/dev
           comment-on-pr: ${{ inputs.comment-on-pr }}
           expect-no-changes: ${{ inputs.expect-no-changes }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
