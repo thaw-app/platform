@@ -2,3 +2,5 @@
 /node_modules/
 .DS_Store
 stack-backup.json
+/coverage/
+.claude/settings.local.json
