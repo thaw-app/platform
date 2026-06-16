@@ -2,7 +2,7 @@ import { groupBy, uniq } from "es-toolkit";
 import type {
 	InfraConfig,
 	LabelGroups,
-	MembersFile,
+	MembersFileInput,
 	RulesetConfig,
 	TeamsFile,
 } from "@/types";
@@ -89,7 +89,7 @@ function validateTeamRefs(config: InfraConfig): ValidationIssue[] {
 
 export function validateMemberRefs(
 	teamsFile: TeamsFile,
-	membersFile: MembersFile,
+	membersFile: MembersFileInput,
 ): ValidationIssue[] {
 	const teamSlugs = new Set(teamsFile.teams.map((t) => t.slug));
 

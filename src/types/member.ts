@@ -4,7 +4,7 @@ import { TeamMemberRoleSchema } from "./team";
 
 const MemberTeamEntrySchema = v.strictObject({
 	slug: v.string(),
-	role: TeamMemberRoleSchema,
+	role: v.optional(TeamMemberRoleSchema, "member"),
 });
 
 export const MemberEntrySchema = v.strictObject({
@@ -53,5 +53,7 @@ export const MembersFileSchema = v.pipe(
 	}),
 );
 
+export type MemberEntryInput = v.InferInput<typeof MemberEntrySchema>;
 export type MemberEntry = v.InferOutput<typeof MemberEntrySchema>;
+export type MembersFileInput = v.InferInput<typeof MembersFileSchema>;
 export type MembersFile = v.InferOutput<typeof MembersFileSchema>;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { mergeTeamMemberships } from "@/setup/members";
 import { validateMemberRefs } from "@/setup/validate";
-import type { MembersFile, TeamsFile } from "@/types";
+import type { MembersFileInput, TeamsFile } from "@/types";
 
 const teamsFile = (): TeamsFile => ({
 	teams: [
@@ -13,16 +13,16 @@ const teamsFile = (): TeamsFile => ({
 
 describe("mergeTeamMemberships", () => {
 	it("folds member-centric YAML into team members arrays", () => {
-		const members: MembersFile = {
+		const members: MembersFileInput = {
 			members: [
 				{
 					username: "alice",
 					teams: [
 						{ slug: "maintainers", role: "maintainer" },
-						{ slug: "contributors", role: "member" },
+						{ slug: "contributors" },
 					],
 				},
-				{ username: "bob", teams: [{ slug: "contributors", role: "member" }] },
+				{ username: "bob", teams: [{ slug: "contributors" }] },
 			],
 		};
 
@@ -36,6 +36,15 @@ describe("mergeTeamMemberships", () => {
 		]);
 	});
 
+	it("defaults omitted role to member", () => {
+		const merged = mergeTeamMemberships(teamsFile(), {
+			members: [{ username: "alice", teams: [{ slug: "contributors" }] }],
+		});
+		expect(merged.teams[1]?.members).toEqual([
+			{ username: "alice", role: "member" },
+		]);
+	});
+
 	it("omits members key when a team has no members", () => {
 		const merged = mergeTeamMemberships(teamsFile(), { members: [] });
 		expect(merged.teams[0]).not.toHaveProperty("members");
@@ -45,9 +54,7 @@ describe("mergeTeamMemberships", () => {
 describe("validateMemberRefs", () => {
 	it("flags unknown team slugs in members.yaml", () => {
 		const issues = validateMemberRefs(teamsFile(), {
-			members: [
-				{ username: "alice", teams: [{ slug: "unknown", role: "member" }] },
-			],
+			members: [{ username: "alice", teams: [{ slug: "unknown" }] }],
 		});
 		expect(issues).toHaveLength(1);
 		expect(issues[0]?.path).toBe("members.0.teams.0.slug");
