@@ -23,6 +23,12 @@ repoAccess:
     - team: contributors
       permission: push
 
+  menubarspawner:
+    - team: maintainers
+      permission: admin
+    - team: contributors
+      permission: push
+
   dot-github:
     - team: maintainers
       permission: admin

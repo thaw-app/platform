@@ -35,6 +35,19 @@ repos:
     deleteBranchOnMerge: true
     autoInit: true
 
+  - name: menubarspawner
+    description: Small macOS menu-bar helper that spawns customizable status items.
+    visibility: public
+    topics:
+      - thaw
+      - macos
+      - menubar
+      - swift
+    mergeStrategies:
+      - squash
+    deleteBranchOnMerge: true
+    autoInit: false
+
   - name: dot-github
     description: Shared organization workflows, issue templates, and defaults.
     visibility: public
