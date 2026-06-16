@@ -131,7 +131,11 @@ describe("OrgRepository", () => {
 	});
 
 	it("omits squash settings when squash is not allowed", async () => {
-		provisionOrgRepository("r", resolvedRepo({ mergeStrategies: ["merge"] }), {});
+		provisionOrgRepository(
+			"r",
+			resolvedRepo({ mergeStrategies: ["merge"] }),
+			{},
+		);
 		await settle();
 
 		const repo = first(findByType("github:index/repository:Repository"));
