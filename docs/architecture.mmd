@@ -24,7 +24,8 @@ flowchart TB
 
   subgraph perRepo["Per-repository resources"]
     teamAccess["TeamRepository access"]
-    branchBp["Branch protection<br/><i>exceptions only</i>"]
+    repoRs["Repository rulesets<br/><i>Free tier</i>"]
+    branchBp["Branch protection<br/><i>overrides only</i>"]
     envs["Environments"]
     repoLabels["Labels"]
     co["CODEOWNERS file"]
@@ -46,6 +47,7 @@ flowchart TB
   rulesetsRes --> ghRulesets
   repoRes --> perRepo
   perRepo --> ghRepos
+  repoRs --> ghRepos
 
   teamsRes -.-> repoRes
-  rulesetsRes -.-> ghRepos
+  rulesetsRes -.-> repoRs

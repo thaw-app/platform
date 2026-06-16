@@ -8,8 +8,8 @@
 # branchProtection when needed.
 #
 # On GitHub Free (enableRulesets: false), org rulesets are not available (404).
-# The same policy is bootstrapped as per-repo branch protection for every entry
-# in repos.yaml. Set enableRulesets: true only if the org upgrades to Team+.
+# The same policy is provisioned as a RepositoryRuleset on every managed repo in
+# repos.yaml. Set enableRulesets: true only if the org upgrades to Team+.
 rulesets:
   - id: repo-main-default
     name: Default branch protection
@@ -45,7 +45,7 @@ rulesets:
       requiredCodeScanning:
         enabled: false
       mergeQueue:
-        enabled: false # not provisionable on org rulesets via @pulumi/github — enable in GitHub UI
+        enabled: false
         mergeMethod: SQUASH
         groupingStrategy: ALLGREEN
       requiredDeployments:

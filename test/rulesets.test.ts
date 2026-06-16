@@ -1,9 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import {
-	bootstrapBranchProtectionFromRulesets,
 	mergeRepoBranchProtection,
 	rulesetAppliesToRepo,
-	rulesetToBranchProtectionConfig,
+	rulesetsForRepo,
 } from "@/setup/rulesets";
 import type { RepoConfig, RulesetConfig } from "@/types";
 
@@ -69,48 +68,26 @@ describe("rulesetAppliesToRepo", () => {
 	});
 });
 
-describe("rulesetToBranchProtectionConfig", () => {
-	it("maps review and status-check policy", () => {
-		const config = rulesetToBranchProtectionConfig(mainRuleset());
-		expect(config).toMatchObject({
-			requiredReviewCount: 2,
-			dismissStaleReviews: true,
-			requireCodeOwnerReviews: true,
-			requireLastPushApproval: true,
-			requireConversationResolution: true,
-			requiredLinearHistory: true,
-			allowsDeletions: false,
-			allowsForcePushes: false,
-			requiredStatusChecks: ["ci"],
-			strictStatusChecks: true,
-		});
-	});
-});
-
-describe("bootstrapBranchProtectionFromRulesets", () => {
-	it("bootstraps default-branch and release patterns", () => {
-		const bootstrapped = bootstrapBranchProtectionFromRulesets(
-			"website",
-			[mainRuleset(), releaseRuleset()],
-			"main",
-		);
+describe("rulesetsForRepo", () => {
+	it("returns applicable active rulesets", () => {
+		const rulesets = rulesetsForRepo("website", [
+			mainRuleset(),
+			releaseRuleset(),
+		]);
 		expect(
-			Object.keys(bootstrapped).sort((a, b) => a.localeCompare(b)),
-		).toEqual(["main", "release/*"]);
-		expect(bootstrapped.main?.requiredReviewCount).toBe(2);
+			rulesets.map((r) => r.id).sort((a, b) => a.localeCompare(b)),
+		).toEqual(["main-default", "release"]);
 	});
 
 	it("skips disabled rulesets and non-matching repos", () => {
-		const ruleset = mainRuleset({
+		const disabled = mainRuleset({
 			enforcement: "disabled",
 			conditions: {
 				refName: { includes: ["~DEFAULT_BRANCH"] },
 				repositoryName: { includes: ["website"], excludes: [] },
 			},
 		});
-		expect(
-			bootstrapBranchProtectionFromRulesets("org-ci", [ruleset], "main"),
-		).toEqual({});
+		expect(rulesetsForRepo("org-ci", [disabled])).toEqual([]);
 	});
 });
 
@@ -121,32 +98,25 @@ describe("mergeRepoBranchProtection", () => {
 		...overrides,
 	});
 
-	it("returns only explicit config when bootstrap is off", () => {
+	it("returns only explicit per-repo overrides", () => {
 		const merged = mergeRepoBranchProtection(
 			repo({
 				branchProtection: { main: { requiredReviewCount: 1 } },
 			}),
-			[mainRuleset()],
 			"main",
-			false,
 		);
 		expect(merged).toEqual({ main: { requiredReviewCount: 1 } });
 	});
 
-	it("bootstraps from rulesets and lets repo overrides win", () => {
+	it("normalizes branch pattern aliases", () => {
 		const merged = mergeRepoBranchProtection(
 			repo({
 				branchProtection: {
-					main: { requiredStatusChecks: ["build"] },
+					"refs/heads/main": { requiredStatusChecks: ["build"] },
 				},
 			}),
-			[mainRuleset()],
 			"main",
-			true,
 		);
-		expect(merged.main).toMatchObject({
-			requiredReviewCount: 2,
-			requiredStatusChecks: ["build"],
-		});
+		expect(merged).toEqual({ main: { requiredStatusChecks: ["build"] } });
 	});
 });

@@ -3,7 +3,7 @@ import type {
 	RepoConfig,
 	RulesetConfig,
 } from "@/types";
-import { compact, normalizeBranchPattern } from "./utils";
+import { normalizeBranchPattern } from "./utils";
 
 type RepoCondition = { includes: string[]; excludes: string[] };
 
@@ -25,78 +25,22 @@ export function rulesetAppliesToRepo(
 	return cond.includes.some((p) => p.includes("*"));
 }
 
-function rulesetStatusChecksForBootstrap(
-	ruleset: RulesetConfig,
-): string[] | undefined {
-	const checks = ruleset.rules.requiredStatusChecks;
-	if (!checks?.enabled) return undefined;
-	if (checks.requiredChecks?.length) {
-		return checks.requiredChecks.map((c) => c.context);
-	}
-	const pinned = checks.acceptAnyOf?.[0];
-	return pinned ? [pinned] : undefined;
-}
-
-export function rulesetToBranchProtectionConfig(
-	ruleset: RulesetConfig,
-): BranchProtectionConfig {
-	const { rules } = ruleset;
-	const pr = rules.pullRequest;
-
-	return compact({
-		requiredReviewCount: pr.requiredApprovingReviewCount,
-		dismissStaleReviews: pr.dismissStaleReviewsOnPush,
-		requireCodeOwnerReviews: pr.requireCodeOwnerReview,
-		requireLastPushApproval: pr.requireLastPushApproval,
-		requireConversationResolution: pr.requiredReviewThreadResolution,
-		requiredLinearHistory: rules.requiredLinearHistory,
-		requireSignedCommits: rules.requiredSignatures,
-		allowsDeletions: rules.deletion ? false : undefined,
-		allowsForcePushes: rules.nonFastForward ? false : undefined,
-		requiredStatusChecks: rulesetStatusChecksForBootstrap(ruleset),
-		strictStatusChecks:
-			rules.requiredStatusChecks?.strictRequiredStatusChecksPolicy,
-	});
-}
-
-export function bootstrapBranchProtectionFromRulesets(
+export function rulesetsForRepo(
 	repoName: string,
 	rulesets: RulesetConfig[],
-	defaultBranch: string,
-): Record<string, BranchProtectionConfig> {
-	const merged: Record<string, BranchProtectionConfig> = {};
-
-	for (const ruleset of rulesets) {
-		if (ruleset.target !== "branch" || ruleset.enforcement === "disabled") {
-			continue;
-		}
-		if (!rulesetAppliesToRepo(ruleset, repoName)) continue;
-
-		const config = rulesetToBranchProtectionConfig(ruleset);
-		for (const rawPattern of ruleset.conditions.refName.includes) {
-			const pattern = normalizeBranchPattern(rawPattern, defaultBranch);
-			merged[pattern] = { ...merged[pattern], ...config };
-		}
-	}
-
-	return merged;
+): RulesetConfig[] {
+	return rulesets.filter(
+		(r) => r.enforcement !== "disabled" && rulesetAppliesToRepo(r, repoName),
+	);
 }
 
 export function mergeRepoBranchProtection(
 	repo: RepoConfig,
-	rulesets: RulesetConfig[],
 	defaultBranch: string,
-	bootstrapFromRulesets: boolean,
 ): Record<string, BranchProtectionConfig> {
-	const bootstrapped = bootstrapFromRulesets
-		? bootstrapBranchProtectionFromRulesets(repo.name, rulesets, defaultBranch)
-		: {};
-
-	const merged = { ...bootstrapped };
+	const merged: Record<string, BranchProtectionConfig> = {};
 	for (const [pattern, config] of Object.entries(repo.branchProtection ?? {})) {
-		const normalized = normalizeBranchPattern(pattern, defaultBranch);
-		merged[normalized] = { ...merged[normalized], ...config };
+		merged[normalizeBranchPattern(pattern, defaultBranch)] = config;
 	}
-
 	return merged;
 }

@@ -38,7 +38,7 @@ export default async function setupOrg() {
 			organization,
 			codeownersContent,
 			rulesets,
-			bootstrapBranchProtection: !enableRulesets,
+			provisionRepoRulesets: !enableRulesets,
 		});
 		new OrgRepository(resolved.pulumiName, resolved, teamResources); // NOSONAR
 	}

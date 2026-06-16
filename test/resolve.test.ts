@@ -24,7 +24,7 @@ const baseCtx = {
 	organization: "acme",
 	codeownersContent: "* @acme-org/maintainers\n",
 	rulesets: [],
-	bootstrapBranchProtection: false,
+	provisionRepoRulesets: false,
 };
 
 const repo = (overrides: Partial<RepoConfig> = {}): RepoConfig => ({
@@ -63,10 +63,44 @@ describe("buildRepoConfig", () => {
 		expect(built.organization).toBe("thaw-app");
 	});
 
-	it("derives branch protection only from explicit repo config when bootstrap is off", () => {
+	it("derives branch protection only from explicit repo config", () => {
 		expect(buildRepoConfig(repo(), baseCtx).resolvedBranchProtection).toEqual(
 			{},
 		);
+	});
+
+	it("resolves per-repo rulesets when provisionRepoRulesets is on", () => {
+		const built = buildRepoConfig(repo({ name: "website" }), {
+			...baseCtx,
+			provisionRepoRulesets: true,
+			rulesets: [
+				{
+					id: "main-default",
+					target: "branch",
+					enforcement: "active",
+					conditions: { refName: { includes: ["~DEFAULT_BRANCH"] } },
+					rules: {
+						creation: false,
+						update: false,
+						deletion: false,
+						nonFastForward: false,
+						requiredLinearHistory: false,
+						requiredSignatures: false,
+						copilotCodeReview: {
+							reviewDraftPullRequests: false,
+							reviewOnPush: false,
+						},
+						pullRequest: {},
+						requiredStatusChecks: { enabled: false },
+						requiredCodeScanning: { enabled: false },
+						mergeQueue: { enabled: false },
+						requiredDeployments: { enabled: false },
+					},
+				},
+			],
+		});
+		expect(built.resolvedRepoRulesets).toHaveLength(1);
+		expect(built.resolvedRepoRulesets[0]?.id).toBe("main-default");
 	});
 
 	it("normalizes branch-protection keys so aliases collapse to one pattern", () => {

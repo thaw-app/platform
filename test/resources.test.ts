@@ -22,7 +22,9 @@ pulumi.runtime.setMocks({
 
 // Import AFTER setMocks so module-level pulumi state sees the mocks.
 const { default: OrgRepository } = await import("@/resources/repo");
-const { createRulesets } = await import("@/resources/rulesets");
+const { createRulesets, createRepositoryRulesets } = await import(
+	"@/resources/rulesets"
+);
 const { createEnvironments } = await import("@/resources/environments");
 const { createTeams, createTeamMemberships } = await import(
 	"@/resources/teams"
@@ -59,6 +61,7 @@ const resolvedRepo = (
 	hasProjects: false,
 	hasDiscussions: false,
 	teams: [],
+	resolvedRepoRulesets: [],
 	resolvedBranchProtection: {},
 	squashMergeCommitTitle: "PR_TITLE",
 	squashMergeCommitMessage: "COMMIT_MESSAGES",
@@ -174,6 +177,24 @@ describe("OrgRepository", () => {
 		expect(findByType("github:index/issueLabel:IssueLabel")).toHaveLength(0);
 	});
 
+	it("creates repository rulesets when resolvedRepoRulesets is set", async () => {
+		provisionOrgRepository(
+			"r",
+			resolvedRepo({
+				resolvedRepoRulesets: [mainRuleset({ id: "main-default" })],
+			}),
+			{},
+		);
+		await settle();
+
+		expect(
+			findByType("github:index/repositoryRuleset:RepositoryRuleset"),
+		).toHaveLength(1);
+		expect(
+			findByType("github:index/branchProtection:BranchProtection"),
+		).toHaveLength(0);
+	});
+
 	it("creates child resources for active repos", async () => {
 		provisionOrgRepository(
 			"r",
@@ -270,6 +291,49 @@ describe("OrgRepository", () => {
 		);
 		expect(file.inputs.overwriteOnCreate).toBe(true);
 		expect(file.inputs.autocreateBranch).toBeUndefined();
+	});
+});
+
+describe("createRepositoryRulesets", () => {
+	it("normalizes default-branch patterns", async () => {
+		const repo = new github.Repository("ruleset-repo", {
+			name: "website",
+			description: "d",
+		});
+		createRepositoryRulesets(
+			"website",
+			repo,
+			[
+				mainRuleset({
+					id: "main-default",
+					rules: {
+						...defaultRules(),
+						requiredStatusChecks: {
+							enabled: true,
+							acceptAnyOf: ["ci", "build", "test"],
+							strictRequiredStatusChecksPolicy: true,
+						},
+					},
+				}),
+			],
+			"main",
+		);
+		await settle();
+
+		const rs = first(
+			findByType("github:index/repositoryRuleset:RepositoryRuleset"),
+		);
+		expect(
+			(rs.inputs.conditions as { refName: { includes: string[] } }).refName
+				.includes,
+		).toEqual(["main"]);
+		expect(
+			(
+				rs.inputs.rules as {
+					requiredStatusChecks: { requiredChecks: unknown[] };
+				}
+			).requiredStatusChecks.requiredChecks,
+		).toEqual([{ context: "ci" }]);
 	});
 });
 
