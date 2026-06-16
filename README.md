@@ -197,9 +197,20 @@ bun test            # unit tests (setup, resources, schema)
 bun run schema      # regenerate config/schema/*.json
 pulumi preview      # dry-run (stack dev)
 pulumi up           # apply (stack dev)
+./scripts/drop_bootstrap_from_state.sh  # one-time: orphan legacy *-bootstrap files in state
 ```
 
 Pre-commit hooks ([`.husky/pre-commit`](.husky/pre-commit)) run `biome lint`, `biome check`, and `bun test`.
+
+### Bootstrap README cleanup (one-time)
+
+If `pulumi up` fails deleting `*-bootstrap` `RepositoryFile` resources with **409** (“Changes must be made through a pull request”), branch protection was applied in the same run and GitHub no longer allows the API to delete those placeholder READMEs. The files are harmless — drop them from **Pulumi state only**:
+
+```sh
+pulumi stack select dev
+./scripts/drop_bootstrap_from_state.sh
+pulumi up   # or re-run CI deploy
+```
 
 ## Stack config
 
