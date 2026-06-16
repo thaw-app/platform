@@ -150,7 +150,6 @@ export function createRepositoryRulesets(
 	resourcePrefix: string,
 	repo: github.Repository,
 	rulesets: RulesetConfig[],
-	_defaultBranch: string,
 	opts?: pulumi.ResourceOptions,
 ): github.RepositoryRuleset[] {
 	return rulesets.map((r) => {

@@ -300,24 +300,19 @@ describe("createRepositoryRulesets", () => {
 			name: "website",
 			description: "d",
 		});
-		createRepositoryRulesets(
-			"website",
-			repo,
-			[
-				mainRuleset({
-					id: "main-default",
-					rules: {
-						...defaultRules(),
-						requiredStatusChecks: {
-							enabled: true,
-							acceptAnyOf: ["ci", "build", "test"],
-							strictRequiredStatusChecksPolicy: true,
-						},
+		createRepositoryRulesets("website", repo, [
+			mainRuleset({
+				id: "main-default",
+				rules: {
+					...defaultRules(),
+					requiredStatusChecks: {
+						enabled: true,
+						acceptAnyOf: ["ci", "build", "test"],
+						strictRequiredStatusChecksPolicy: true,
 					},
-				}),
-			],
-			"main",
-		);
+				},
+			}),
+		]);
 		await settle();
 
 		const rs = first(

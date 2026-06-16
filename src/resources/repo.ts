@@ -4,12 +4,140 @@ import {
 	type ComponentResourceOptions,
 	mergeOptions,
 } from "@pulumi/pulumi";
-import type { ResolvedRepoConfig, TeamResourceMap } from "@/types";
+import type { ResolvedRepoConfig, TeamAccess, TeamResourceMap } from "@/types";
 import { createBranchProtection } from "./branch";
 import { createCodeowners } from "./codeowners";
 import { createEnvironments } from "./environments";
 import { createLabels } from "./labels";
 import { createRepositoryRulesets } from "./rulesets";
+
+type ActiveRepoContext = {
+	resourcePrefix: string;
+	repo: github.Repository;
+	teams: TeamAccess[];
+	resolvedRepoRulesets: ResolvedRepoConfig["resolvedRepoRulesets"];
+	resolvedBranchProtection: ResolvedRepoConfig["resolvedBranchProtection"];
+	environments: ResolvedRepoConfig["environments"];
+	labels: ResolvedRepoConfig["labels"];
+	defaultBranch: string;
+	codeownersContent: string;
+	teamResources: TeamResourceMap;
+};
+
+function provisionTeamAccess(
+	parent: OrgRepository,
+	ctx: ActiveRepoContext,
+): void {
+	if (ctx.teams.length === 0) return;
+
+	const teamsComponent = new ComponentResource(
+		"custom:github:OrgRepositoryTeams",
+		`${ctx.resourcePrefix}-teams`,
+		{},
+		{ parent },
+	);
+	for (const { slug, teamId, permission } of ctx.teams) {
+		new github.TeamRepository(
+			`${ctx.resourcePrefix}-team-${slug}`,
+			{ repository: ctx.repo.name, teamId, permission },
+			{
+				parent: teamsComponent,
+				dependsOn: [ctx.repo],
+				aliases: [{ parent }],
+			},
+		);
+	}
+}
+
+function provisionRepositoryRulesets(
+	parent: OrgRepository,
+	ctx: ActiveRepoContext,
+): void {
+	if (ctx.resolvedRepoRulesets.length === 0) return;
+
+	const rulesetsComponent = new ComponentResource(
+		"custom:github:OrgRepositoryRulesets",
+		`${ctx.resourcePrefix}-rulesets`,
+		{},
+		{ parent },
+	);
+	createRepositoryRulesets(
+		ctx.resourcePrefix,
+		ctx.repo,
+		ctx.resolvedRepoRulesets,
+		{
+			parent: rulesetsComponent,
+			aliases: [{ parent }],
+		},
+	);
+}
+
+function provisionBranchProtection(
+	parent: OrgRepository,
+	ctx: ActiveRepoContext,
+): void {
+	const bpEntries = Object.entries(ctx.resolvedBranchProtection);
+	if (bpEntries.length === 0) return;
+
+	const bpComponent = new ComponentResource(
+		"custom:github:OrgRepositoryBranchProtection",
+		`${ctx.resourcePrefix}-branch-protection`,
+		{},
+		{ parent },
+	);
+	for (const [pattern, protection] of bpEntries) {
+		createBranchProtection(
+			{
+				resourceName: `${ctx.resourcePrefix}-bp-${pattern.replace(/[/*?[\]]/g, "-")}`,
+				pattern,
+				protection,
+				repo: ctx.repo,
+			},
+			mergeOptions({ parent: bpComponent }, { aliases: [{ parent }] }),
+		);
+	}
+}
+
+function provisionActiveRepoResources(
+	parent: OrgRepository,
+	ctx: ActiveRepoContext,
+): void {
+	provisionTeamAccess(parent, ctx);
+	provisionRepositoryRulesets(parent, ctx);
+	provisionBranchProtection(parent, ctx);
+
+	createEnvironments(
+		{
+			resourcePrefix: ctx.resourcePrefix,
+			environments: ctx.environments ?? [],
+			repo: ctx.repo,
+			teamResources: ctx.teamResources,
+		},
+		{ parent },
+	);
+
+	if (ctx.labels && Object.keys(ctx.labels).length > 0) {
+		createLabels(
+			{
+				resourcePrefix: ctx.resourcePrefix,
+				labels: ctx.labels,
+				repo: ctx.repo,
+			},
+			{ parent },
+		);
+	}
+
+	createCodeowners(
+		ctx.resourcePrefix,
+		ctx.repo,
+		ctx.defaultBranch,
+		ctx.codeownersContent,
+		{
+			parent,
+			dependsOn: [ctx.repo],
+		},
+	);
+}
 
 export default class OrgRepository extends ComponentResource {
 	constructor(
@@ -78,86 +206,17 @@ export default class OrgRepository extends ComponentResource {
 		);
 
 		if (!archived) {
-			if (teams.length > 0) {
-				const teamsComponent = new ComponentResource(
-					"custom:github:OrgRepositoryTeams",
-					`${resourcePrefix}-teams`,
-					{},
-					{ parent: this },
-				);
-				for (const { slug, teamId, permission } of teams) {
-					new github.TeamRepository(
-						`${resourcePrefix}-team-${slug}`,
-						{ repository: repo.name, teamId, permission },
-						{
-							parent: teamsComponent,
-							dependsOn: [repo],
-							aliases: [{ parent: this }],
-						},
-					);
-				}
-			}
-
-			if (resolvedRepoRulesets.length > 0) {
-				const rulesetsComponent = new ComponentResource(
-					"custom:github:OrgRepositoryRulesets",
-					`${resourcePrefix}-rulesets`,
-					{},
-					{ parent: this },
-				);
-				createRepositoryRulesets(
-					resourcePrefix,
-					repo,
-					resolvedRepoRulesets,
-					defaultBranch,
-					{
-						parent: rulesetsComponent,
-						aliases: [{ parent: this }],
-					},
-				);
-			}
-
-			const bpEntries = Object.entries(resolvedBranchProtection);
-			if (bpEntries.length > 0) {
-				const bpComponent = new ComponentResource(
-					"custom:github:OrgRepositoryBranchProtection",
-					`${resourcePrefix}-branch-protection`,
-					{},
-					{ parent: this },
-				);
-				for (const [pattern, protection] of bpEntries) {
-					createBranchProtection(
-						{
-							resourceName: `${resourcePrefix}-bp-${pattern.replace(/[/*?[\]]/g, "-")}`,
-							pattern,
-							protection,
-							repo,
-						},
-						mergeOptions(
-							{ parent: bpComponent },
-							{ aliases: [{ parent: this }] },
-						),
-					);
-				}
-			}
-
-			createEnvironments(
-				{
-					resourcePrefix,
-					environments: environments ?? [],
-					repo,
-					teamResources,
-				},
-				{ parent: this },
-			);
-
-			if (labels && Object.keys(labels).length > 0) {
-				createLabels({ resourcePrefix, labels, repo }, { parent: this });
-			}
-
-			createCodeowners(resourcePrefix, repo, defaultBranch, codeownersContent, {
-				parent: this,
-				dependsOn: [repo],
+			provisionActiveRepoResources(this, {
+				resourcePrefix,
+				repo,
+				teams,
+				resolvedRepoRulesets,
+				resolvedBranchProtection,
+				environments,
+				labels,
+				defaultBranch,
+				codeownersContent,
+				teamResources,
 			});
 		}
 
