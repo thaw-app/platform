@@ -48,8 +48,10 @@ repos:
       - squash
     deleteBranchOnMerge: true
     autoInit: false
+    adopt: true
 
-  - name: dot-github
+  - name: .github
+    pulumiName: dot-github
     description: Shared organization workflows, issue templates, and defaults.
     visibility: public
     topics:
@@ -59,7 +61,7 @@ repos:
     mergeStrategies:
       - squash
     deleteBranchOnMerge: true
-    autoInit: true
+    autoInit: false
 
   - name: org-ci
     description: Organization-wide CI/CD workflows and automation scripts.

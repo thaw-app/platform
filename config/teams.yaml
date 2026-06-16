@@ -29,7 +29,7 @@ repoAccess:
     - team: contributors
       permission: push
 
-  dot-github:
+  ".github":
     - team: maintainers
       permission: admin
 

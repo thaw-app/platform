@@ -40,6 +40,6 @@ export default async function setupOrg() {
 			rulesets,
 			bootstrapBranchProtection: !enableRulesets,
 		});
-		new OrgRepository(resolved.name, resolved, teamResources); // NOSONAR
+		new OrgRepository(resolved.pulumiName, resolved, teamResources); // NOSONAR
 	}
 }

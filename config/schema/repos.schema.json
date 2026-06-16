@@ -38,6 +38,12 @@
 					"autoInit": {
 						"type": "boolean"
 					},
+					"adopt": {
+						"type": "boolean"
+					},
+					"pulumiName": {
+						"type": "string"
+					},
 					"archived": {
 						"type": "boolean"
 					},

@@ -173,7 +173,11 @@ Local runs need `pulumi login`. CI uses OIDC instead of a local token.
 
 **Add a repository** — append an entry to `config/repos.yaml` (only `name` and `description` are required; everything else inherits from `org.yaml` defaults). Grant team access in `config/teams.yaml` under `repoAccess`.
 
-Set `autoInit: true` (the default for current managed repos) when the repository may be empty at first apply. Pulumi creates the GitHub repo, bootstraps the default branch with a placeholder `README.md` if needed, then syncs `.github/CODEOWNERS` from [`config/codeowners.yaml`](config/codeowners.yaml) ([`src/resources/codeowners.ts`](src/resources/codeowners.ts)). With `autoInit: false`, the repo must already have a default branch with at least one commit before CODEOWNERS can be written — use that only when importing an existing repo you do not want auto-seeded.
+Set `autoInit: true` when Pulumi should create an empty GitHub repo (GitHub seeds the default branch). Set `autoInit: false` when the repo already exists. For pre-existing repos, add `adopt: true` so the first `pulumi up` imports `org/name` into state instead of calling create (remove `adopt` after a successful apply). Synced `.github/CODEOWNERS` comes from [`config/codeowners.yaml`](config/codeowners.yaml).
+
+**Import an existing repository** — `autoInit: false`, `adopt: true`, then `pulumi up`. If a prior apply failed partway (component created, repository not), re-run `pulumi up` with `adopt: true` still set.
+
+**Rename a managed repo on GitHub** — rename in the GitHub UI or API, update `name` in `repos.yaml`, and set `pulumiName` to the previous Pulumi resource prefix so state stays aligned (see `.github` / `pulumiName: dot-github`). Run [`scripts/rename_dot_github.sh`](scripts/rename_dot_github.sh) before applying the `dot-github` → `.github` config change.
 
 **Add a team** — add it under `teams:` in `config/teams.yaml`, then reference its `slug` in `repoAccess` and/or `config/members.yaml`.
 
