@@ -38,6 +38,6 @@ export default async function setupOrg() {
 			organization,
 			codeownersContent,
 		});
-		void new OrgRepository(resolved.name, resolved, teamResources);
+		new OrgRepository(resolved.name, resolved, teamResources); // NOSONAR
 	}
 }
