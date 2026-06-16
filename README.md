@@ -173,7 +173,7 @@ Local runs need `pulumi login`. CI uses OIDC instead of a local token.
 
 **Add a repository** — append an entry to `config/repos.yaml` (only `name` and `description` are required; everything else inherits from `org.yaml` defaults). Grant team access in `config/teams.yaml` under `repoAccess`.
 
-Set `autoInit: true` when Pulumi should create an empty GitHub repo (GitHub seeds the default branch). Set `autoInit: false` when the repo already exists. For pre-existing repos, add `adopt: true` so the first `pulumi up` imports `org/name` into state instead of calling create (remove `adopt` after a successful apply). Synced `.github/CODEOWNERS` comes from [`config/codeowners.yaml`](config/codeowners.yaml).
+Set `autoInit: true` when Pulumi should create an empty GitHub repo (GitHub seeds the default branch). Set `autoInit: false` when the repo already exists. For pre-existing repos, add `adopt: true` so the first `pulumi up` imports the repo name into state (scoped by `github:owner`; remove `adopt` after a successful apply). Synced `.github/CODEOWNERS` comes from [`config/codeowners.yaml`](config/codeowners.yaml).
 
 **Import an existing repository** — `autoInit: false`, `adopt: true`, then `pulumi up`. If a prior apply failed partway (component created, repository not), re-run `pulumi up` with `adopt: true` still set.
 

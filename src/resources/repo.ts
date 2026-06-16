@@ -21,7 +21,6 @@ export default class OrgRepository extends ComponentResource {
 
 		const {
 			name: githubName,
-			organization,
 			adopt,
 			description,
 			visibility,
@@ -72,7 +71,7 @@ export default class OrgRepository extends ComponentResource {
 			},
 			{
 				parent: this,
-				...(adopt ? { import: `${organization}/${githubName}` } : {}),
+				...(adopt ? { import: githubName } : {}),
 			},
 		);
 
