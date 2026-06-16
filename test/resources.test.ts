@@ -199,14 +199,20 @@ describe("OrgRepository", () => {
 		await settle();
 
 		expect(findByType("github:index/branch:Branch")).toHaveLength(0);
-		const file = first(
-			findByType("github:index/repositoryFile:RepositoryFile"),
+
+		const files = findByType("github:index/repositoryFile:RepositoryFile");
+		expect(files).toHaveLength(2);
+
+		const bootstrap = files.find((f) => f.inputs.file === "README.md");
+		expect(bootstrap?.inputs.autocreateBranch).toBe(true);
+		expect(bootstrap?.inputs.autocreateBranchSourceBranch).toBe("main");
+
+		const codeowners = files.find(
+			(f) => f.inputs.file === ".github/CODEOWNERS",
 		);
-		expect(file.inputs.file).toBe(".github/CODEOWNERS");
-		expect(file.inputs.content).toBe("* @acme-org/maintainers");
-		expect(file.inputs.overwriteOnCreate).toBe(true);
-		expect(file.inputs.autocreateBranch).toBe(true);
-		expect(file.inputs.autocreateBranchSourceBranch).toBe("main");
+		expect(codeowners?.inputs.content).toBe("* @acme-org/maintainers");
+		expect(codeowners?.inputs.overwriteOnCreate).toBe(true);
+		expect(codeowners?.inputs.autocreateBranch).toBeUndefined();
 	});
 
 	it("syncs CODEOWNERS without Branch when autoInit is false", async () => {

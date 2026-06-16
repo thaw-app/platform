@@ -1,7 +1,7 @@
 import github from "@pulumi/github";
 import { mergeOptions, type ResourceOptions } from "@pulumi/pulumi";
 
-const fileArgs = (
+const codeownersFileArgs = (
 	repo: github.Repository,
 	defaultBranch: string,
 	content: string,
@@ -13,6 +13,28 @@ const fileArgs = (
 	commitMessage: "chore: sync CODEOWNERS from org config",
 	overwriteOnCreate: true,
 });
+
+/** Seeds the default branch on repos that exist but have no commits yet. */
+function bootstrapDefaultBranch(
+	resourcePrefix: string,
+	repo: github.Repository,
+	defaultBranch: string,
+	opts: ResourceOptions,
+): github.RepositoryFile {
+	return new github.RepositoryFile(
+		`${resourcePrefix}-bootstrap`,
+		{
+			repository: repo.name,
+			file: "README.md",
+			content: `# ${repo.name}\n\nManaged by [thaw-platform](https://github.com/thaw-app/thaw-platform).\n`,
+			commitMessage: "chore: bootstrap default branch",
+			overwriteOnCreate: true,
+			autocreateBranch: true,
+			autocreateBranchSourceBranch: defaultBranch,
+		},
+		opts,
+	);
+}
 
 export function createCodeowners(
 	resourcePrefix: string,
@@ -26,27 +48,28 @@ export function createCodeowners(
 	if (!trimmed) return undefined;
 
 	const baseOpts = mergeOptions(opts, { dependsOn: [repo] });
-	const fileInputs = fileArgs(repo, defaultBranch, trimmed);
 
 	if (autoInit) {
-		// github.Branch requires an existing commit (409 on empty repos). autoInit on
-		// the Repository only applies at creation time — for already-empty repos,
-		// autocreateBranch on the first file seeds the default branch.
+		// Repository.autoInit only runs at create time. For already-empty repos,
+		// bootstrap README first (autocreateBranch), then CODEOWNERS on that branch.
+		const bootstrap = bootstrapDefaultBranch(
+			resourcePrefix,
+			repo,
+			defaultBranch,
+			baseOpts,
+		);
+
 		return new github.RepositoryFile(
 			`${resourcePrefix}-codeowners`,
-			{
-				...fileInputs,
-				autocreateBranch: true,
-				autocreateBranchSourceBranch: defaultBranch,
-			},
-			baseOpts,
+			codeownersFileArgs(repo, defaultBranch, trimmed),
+			mergeOptions(baseOpts, { dependsOn: [bootstrap] }),
 		);
 	}
 
 	// Non-init repos must already have a default branch (manual bootstrap).
 	return new github.RepositoryFile(
 		`${resourcePrefix}-codeowners`,
-		fileInputs,
+		codeownersFileArgs(repo, defaultBranch, trimmed),
 		baseOpts,
 	);
 }
