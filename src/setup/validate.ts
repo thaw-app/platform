@@ -9,6 +9,8 @@ import type {
 import type { ValidationIssue } from "./types";
 import { issue, normalizeBranchPattern } from "./utils";
 
+const compareStrings = (a: string, b: string) => a.localeCompare(b);
+
 function rulesetStatusContexts(r: RulesetConfig): string[] {
 	const checks = r.rules.requiredStatusChecks;
 	if (!checks?.enabled) return [];
@@ -23,8 +25,8 @@ function statusCheckSetsCompatible(
 	bpContexts: string[],
 ): boolean {
 	if (rulesetContexts.length === 0 || bpContexts.length === 0) return true;
-	const rulesetSorted = [...rulesetContexts].sort();
-	const bpSorted = [...bpContexts].sort();
+	const rulesetSorted = [...rulesetContexts].sort(compareStrings);
+	const bpSorted = [...bpContexts].sort(compareStrings);
 	if (rulesetSorted.join() === bpSorted.join()) return true;
 	// acceptAnyOf: any listed name is valid; branch protection may pin one.
 	const rulesetSet = new Set(rulesetContexts);
@@ -158,8 +160,10 @@ function validateRulesetBranchProtectionOverlap(
 	);
 
 	return activeBranchRulesets.flatMap((r) => {
-		const rulesetPatterns = r.conditions.refName.includes.map((raw) =>
-			normalizeBranchPattern(raw, defaultBranch),
+		const rulesetPatterns = new Set(
+			r.conditions.refName.includes.map((raw) =>
+				normalizeBranchPattern(raw, defaultBranch),
+			),
 		);
 		const rulesetContexts = rulesetStatusContexts(r);
 
@@ -172,7 +176,7 @@ function validateRulesetBranchProtectionOverlap(
 				// Exact match after normalization only — glob-pattern overlap
 				// (e.g. BP release/* vs ruleset release/v*) is out of scope.
 				const normalizedBp = normalizeBranchPattern(pattern, defaultBranch);
-				if (!rulesetPatterns.includes(normalizedBp)) return [];
+				if (!rulesetPatterns.has(normalizedBp)) return [];
 
 				const bpContexts = bp.requiredStatusChecks ?? [];
 				if (rulesetContexts.length === 0 || bpContexts.length === 0) {
@@ -181,8 +185,8 @@ function validateRulesetBranchProtectionOverlap(
 
 				if (statusCheckSetsCompatible(rulesetContexts, bpContexts)) return [];
 
-				const rulesetSorted = [...rulesetContexts].sort();
-				const bpSorted = [...bpContexts].sort();
+				const rulesetSorted = [...rulesetContexts].sort(compareStrings);
+				const bpSorted = [...bpContexts].sort(compareStrings);
 
 				return [
 					issue(

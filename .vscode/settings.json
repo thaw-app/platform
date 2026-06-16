@@ -1,6 +1,6 @@
 {
 	"sonarlint.connectedMode.project": {
-		"connectionId": "diazdesandi",
-		"projectKey": "diazdesandi_thaw-platform"
+		"connectionId": "Thaw Org",
+		"projectKey": "thaw-app_platform"
 	}
 }

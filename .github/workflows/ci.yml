@@ -2,9 +2,16 @@ name: CI/CD
 on:
   pull_request:
     branches: [main]
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
   push:
     branches: [main]
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
   merge_group:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -41,7 +48,6 @@ jobs:
         run: bun test --coverage --coverage-reporter=lcov
 
       - name: SonarQube Scan
-        if: github.event_name == 'pull_request'
         uses: SonarSource/sonarqube-scan-action@v8
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

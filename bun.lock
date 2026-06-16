@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "thaw-platform",
+      "name": "platform",
       "dependencies": {
         "@pulumi/github": "^6.14.0",
         "@pulumi/pulumi": "^3.244.0",

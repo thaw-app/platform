@@ -1,1 +1,3 @@
+biome lint
+biome check
 bun test

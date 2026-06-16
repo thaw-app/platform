@@ -97,13 +97,21 @@ const teamsConfig = (overrides: Partial<TeamsConfig> = {}): TeamsConfig => ({
 	...overrides,
 });
 
+function provisionOrgRepository(
+	name: string,
+	config: ResolvedRepoConfig,
+	teams: Record<string, github.Team> = {},
+): void {
+	new OrgRepository(name, config, teams);
+}
+
 describe("OrgRepository", () => {
 	it("exports a constructor function", () => {
 		expect(typeof OrgRepository).toBe("function");
 	});
 
 	it("sets merge-strategy flags for squash", async () => {
-		new OrgRepository(
+		provisionOrgRepository(
 			"r",
 			resolvedRepo({
 				mergeStrategies: ["squash"],
@@ -123,7 +131,11 @@ describe("OrgRepository", () => {
 	});
 
 	it("omits squash settings when squash is not allowed", async () => {
-		new OrgRepository("r", resolvedRepo({ mergeStrategies: ["merge"] }), {});
+		provisionOrgRepository(
+			"r",
+			resolvedRepo({ mergeStrategies: ["merge"] }),
+			{},
+		);
 		await settle();
 
 		const repo = first(findByType("github:index/repository:Repository"));
@@ -132,7 +144,7 @@ describe("OrgRepository", () => {
 	});
 
 	it("skips child resources for archived repos", async () => {
-		new OrgRepository(
+		provisionOrgRepository(
 			"r",
 			resolvedRepo({
 				archived: true,
@@ -161,7 +173,7 @@ describe("OrgRepository", () => {
 	});
 
 	it("creates child resources for active repos", async () => {
-		new OrgRepository(
+		provisionOrgRepository(
 			"r",
 			resolvedRepo({
 				teams: [{ slug: "maintainers", teamId: "42", permission: "admin" }],
@@ -188,7 +200,7 @@ describe("OrgRepository", () => {
 	});
 
 	it("syncs CODEOWNERS from org config", async () => {
-		new OrgRepository(
+		provisionOrgRepository(
 			"r",
 			resolvedRepo({
 				autoInit: true,
@@ -198,20 +210,26 @@ describe("OrgRepository", () => {
 		);
 		await settle();
 
-		const branch = first(findByType("github:index/branch:Branch"));
-		expect(branch.inputs.branch).toBe("main");
+		expect(findByType("github:index/branch:Branch")).toHaveLength(0);
 
-		const file = first(
-			findByType("github:index/repositoryFile:RepositoryFile"),
+		const files = findByType("github:index/repositoryFile:RepositoryFile");
+		expect(files).toHaveLength(2);
+
+		const bootstrap = files.find((f) => f.inputs.file === "README.md");
+		expect(bootstrap?.inputs.content).toContain("# r\n");
+		expect(bootstrap?.inputs.autocreateBranch).toBe(true);
+		expect(bootstrap?.inputs.autocreateBranchSourceBranch).toBe("main");
+
+		const codeowners = files.find(
+			(f) => f.inputs.file === ".github/CODEOWNERS",
 		);
-		expect(file.inputs.file).toBe(".github/CODEOWNERS");
-		expect(file.inputs.content).toBe("* @acme-org/maintainers");
-		expect(file.inputs.overwriteOnCreate).toBe(true);
-		expect(file.inputs.autocreateBranch).toBeUndefined();
+		expect(codeowners?.inputs.content).toBe("* @acme-org/maintainers");
+		expect(codeowners?.inputs.overwriteOnCreate).toBe(true);
+		expect(codeowners?.inputs.autocreateBranch).toBeUndefined();
 	});
 
 	it("syncs CODEOWNERS without Branch when autoInit is false", async () => {
-		new OrgRepository(
+		provisionOrgRepository(
 			"r",
 			resolvedRepo({
 				autoInit: false,

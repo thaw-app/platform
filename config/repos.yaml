@@ -20,7 +20,7 @@ repos:
     mergeStrategies:
       - squash
     deleteBranchOnMerge: true
-    autoInit: false
+    autoInit: true
 
   - name: homebrew-tap
     description: Homebrew tap formulas for Thaw releases.
@@ -33,7 +33,7 @@ repos:
     mergeStrategies:
       - squash
     deleteBranchOnMerge: true
-    autoInit: false
+    autoInit: true
 
   - name: dot-github
     description: Shared organization workflows, issue templates, and defaults.
@@ -45,7 +45,7 @@ repos:
     mergeStrategies:
       - squash
     deleteBranchOnMerge: true
-    autoInit: false
+    autoInit: true
 
   - name: org-ci
     description: Organization-wide CI/CD workflows and automation scripts.
@@ -58,4 +58,4 @@ repos:
     mergeStrategies:
       - squash
     deleteBranchOnMerge: true
-    autoInit: false
+    autoInit: true

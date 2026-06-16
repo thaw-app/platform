@@ -50,8 +50,9 @@ export function assertReviewerTeamsCreatable(
 			.map((env) => `repos.${repo.name}.environments.${env.name}`),
 	);
 	if (offenders.length > 0) {
+		const lines = offenders.map((o) => `- ${o}`).join("\n");
 		throw new Error(
-			`enableTeams is false, but these environments require reviewer teams:\n${offenders.map((o) => `- ${o}`).join("\n")}`,
+			`enableTeams is false, but these environments require reviewer teams:\n${lines}`,
 		);
 	}
 }
