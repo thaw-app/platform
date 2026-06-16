@@ -9,6 +9,13 @@ export function normalizeBranchPattern(
 	return pattern.replace(/^refs\/heads\//, "");
 }
 
+/** Ref names for github:RepositoryRuleset / OrganizationRuleset conditions. */
+export function normalizeRulesetRefName(pattern: string): string {
+	if (pattern === "~DEFAULT_BRANCH" || pattern === "~ALL") return pattern;
+	if (pattern.startsWith("refs/")) return pattern;
+	return `refs/heads/${pattern}`;
+}
+
 export function normalizeActors(actors: string[], org: string): string[] {
 	if (!actors?.length) return [];
 	return actors.map((a) => {

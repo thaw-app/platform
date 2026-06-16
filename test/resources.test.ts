@@ -326,7 +326,7 @@ describe("createRepositoryRulesets", () => {
 		expect(
 			(rs.inputs.conditions as { refName: { includes: string[] } }).refName
 				.includes,
-		).toEqual(["main"]);
+		).toEqual(["~DEFAULT_BRANCH"]);
 		expect(
 			(
 				rs.inputs.rules as {
