@@ -9,6 +9,7 @@ import { createBranchProtection } from "./branch";
 import { createCodeowners } from "./codeowners";
 import { createEnvironments } from "./environments";
 import { createLabels } from "./labels";
+import { createRepositoryRulesets } from "./rulesets";
 
 export default class OrgRepository extends ComponentResource {
 	constructor(
@@ -35,6 +36,7 @@ export default class OrgRepository extends ComponentResource {
 			autoInit,
 			archived,
 			teams,
+			resolvedRepoRulesets,
 			resolvedBranchProtection,
 			environments,
 			labels,
@@ -94,6 +96,25 @@ export default class OrgRepository extends ComponentResource {
 						},
 					);
 				}
+			}
+
+			if (resolvedRepoRulesets.length > 0) {
+				const rulesetsComponent = new ComponentResource(
+					"custom:github:OrgRepositoryRulesets",
+					`${resourcePrefix}-rulesets`,
+					{},
+					{ parent: this },
+				);
+				createRepositoryRulesets(
+					resourcePrefix,
+					repo,
+					resolvedRepoRulesets,
+					defaultBranch,
+					{
+						parent: rulesetsComponent,
+						aliases: [{ parent: this }],
+					},
+				);
 			}
 
 			const bpEntries = Object.entries(resolvedBranchProtection);

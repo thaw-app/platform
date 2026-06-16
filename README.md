@@ -39,7 +39,8 @@ flowchart TB
 
   subgraph perRepo["Per-repository resources"]
     teamAccess["TeamRepository access"]
-    branchBp["Branch protection<br/><i>exceptions only</i>"]
+    branchBp["Branch protection<br/><i>overrides only</i>"]
+    repoRs["Repository rulesets<br/><i>Free tier</i>"]
     envs["Environments"]
     repoLabels["Labels"]
     co["CODEOWNERS file"]
@@ -61,9 +62,10 @@ flowchart TB
   rulesetsRes --> ghRulesets
   repoRes --> perRepo
   perRepo --> ghRepos
+  repoRs --> ghRepos
 
   teamsRes -.-> repoRes
-  rulesetsRes -.-> ghRepos
+  rulesetsRes -.-> repoRs
 ```
 
 Source: [`docs/architecture.mmd`](docs/architecture.mmd). Edit the `.mmd` file and keep the README block in sync when the flow changes.
@@ -84,11 +86,11 @@ Source: [`docs/architecture.mmd`](docs/architecture.mmd). Edit the `.mmd` file a
 
 1. **Load & validate** — [`src/setup/loader.ts`](src/setup/loader.ts) parses each YAML file against a [valibot](https://valibot.dev/) schema in [`src/types/`](src/types/), merges member records from [`config/members.yaml`](config/members.yaml) into team definitions ([`src/setup/members.ts`](src/setup/members.ts)), then runs cross-reference checks ([`src/setup/validate.ts`](src/setup/validate.ts)): unknown team/repo references, branch patterns claimed by multiple rulesets, and labels defined in multiple groups.
 2. **Resolve** — [`src/setup/resolve.ts`](src/setup/resolve.ts) fills each repo from org-wide `defaults` in [`config/org.yaml`](config/org.yaml) and translates config into Pulumi inputs.
-3. **Provision** — [`src/org.ts`](src/org.ts) creates teams (when `enableTeams` is on), org rulesets (when `enableRulesets` is on), and one `OrgRepository` component ([`src/resources/repo.ts`](src/resources/repo.ts)) per entry in `repos.yaml`. Each component owns that repo's team access, branch protection (bootstrapped from rulesets on Free tier), deployment environments, labels, and synced `.github/CODEOWNERS`.
+3. **Provision** — [`src/org.ts`](src/org.ts) creates teams (when `enableTeams` is on), org rulesets (when `enableRulesets` is on), and one `OrgRepository` component ([`src/resources/repo.ts`](src/resources/repo.ts)) per entry in `repos.yaml`. Each component owns that repo's team access, repository rulesets (when org rulesets are off), optional branch-protection overrides, deployment environments, labels, and synced `.github/CODEOWNERS`.
 
 Schemas use `strictObject`, so an unknown or misspelled YAML key fails the run instead of being silently ignored.
 
-> **Branch enforcement:** [`config/rulesets.yaml`](config/rulesets.yaml) is the single policy source. With `enableRulesets: false` (GitHub Free — the default for `thaw-app`), that policy is **bootstrapped as per-repo branch protection** on every managed repo ([`src/setup/rulesets.ts`](src/setup/rulesets.ts)). With `enableRulesets: true` (Team/Enterprise only), the same file provisions org rulesets instead. Use per-repo `branchProtection` in `repos.yaml` only for overrides (e.g. pin `build` instead of the default `ci` status check).
+> **Branch enforcement:** [`config/rulesets.yaml`](config/rulesets.yaml) is the single policy source. With `enableRulesets: false` (GitHub Free — the default for `thaw-app`), that policy is provisioned as a **`RepositoryRuleset` on each managed repo** ([`src/resources/rulesets.ts`](src/resources/rulesets.ts)). With `enableRulesets: true` (Team/Enterprise only), the same file provisions **org-level** rulesets instead. Use per-repo `branchProtection` in `repos.yaml` only for legacy overrides (e.g. pin `build` instead of the default `ci` status check).
 
 ## CI/CD
 
@@ -221,7 +223,7 @@ Per-stack settings use the `thaw-config:` namespace (Pulumi project name from [`
 | `github:owner` | GitHub organization (`thaw-app`) |
 | `github:token` | Provider credential (secret; set on stack for local runs) |
 | `thaw-config:enableTeams` (default `true`) | Create teams and memberships |
-| `thaw-config:enableRulesets` (default `true`) | Create org-level rulesets; when `false`, bootstrap the same policy as per-repo branch protection |
+| `thaw-config:enableRulesets` (default `true`) | Create org-level rulesets; when `false`, provision the same policy as per-repo repository rulesets |
 
 ### Stack
 
@@ -235,7 +237,7 @@ Pulumi project: **`thaw-config`**. Stack reference: **`diazdesandi/dev`**. `gith
 pulumi config --stack dev   # inspect thaw-config:* and github:* keys
 ```
 
-¹ **`enableRulesets: false`** on GitHub Free — org rulesets return **404**. Branch policy from [`config/rulesets.yaml`](config/rulesets.yaml) is applied via per-repo branch protection instead. Managed-repo CI jobs may use any of **`ci`**, **`build`**, or **`test`** as the status check name (`acceptAnyOf` in rulesets; bootstrap pins `ci` by default — override per repo in `branchProtection` if needed).
+¹ **`enableRulesets: false`** on GitHub Free — org rulesets return **404**. Branch policy from [`config/rulesets.yaml`](config/rulesets.yaml) is applied via a **`RepositoryRuleset` on each managed repo**. Managed-repo CI jobs may use any of **`ci`**, **`build`**, or **`test`** as the status check name (`acceptAnyOf` in rulesets; provisioning pins `ci` by default — override per repo in `branchProtection` if needed).
 
 ### Drift detection
 

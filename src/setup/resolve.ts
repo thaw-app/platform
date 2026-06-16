@@ -7,7 +7,7 @@ import type {
 	TeamResourceMap,
 	TeamsConfig,
 } from "@/types";
-import { mergeRepoBranchProtection } from "./rulesets";
+import { mergeRepoBranchProtection, rulesetsForRepo } from "./rulesets";
 import type { RepoBuildContext } from "./types";
 import { compact, normalizeActors, normalizeBranchPattern } from "./utils";
 
@@ -79,15 +79,13 @@ export function buildRepoConfig(
 		labels,
 		organization,
 		rulesets,
-		bootstrapBranchProtection,
+		provisionRepoRulesets,
 	} = ctx;
 	const { features } = defaults;
 
 	const branchProtection = mergeRepoBranchProtection(
 		repo,
-		rulesets,
 		defaults.defaultBranch,
-		bootstrapBranchProtection,
 	);
 
 	const resolvedBranchProtection: Record<string, BranchProtectionEntry> =
@@ -110,6 +108,9 @@ export function buildRepoConfig(
 		hasDiscussions: repo.hasDiscussions ?? features.discussions,
 		labels: { ...labels, ...repo.labels },
 		teams: teamAccess,
+		resolvedRepoRulesets: provisionRepoRulesets
+			? rulesetsForRepo(repo.name, rulesets)
+			: [],
 		resolvedBranchProtection,
 		squashMergeCommitTitle: defaults.squashMergeCommitTitle,
 		squashMergeCommitMessage: defaults.squashMergeCommitMessage,

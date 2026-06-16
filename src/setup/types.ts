@@ -13,5 +13,5 @@ export interface RepoBuildContext {
 	organization: string;
 	codeownersContent: string;
 	rulesets: RulesetConfig[];
-	bootstrapBranchProtection: boolean;
+	provisionRepoRulesets: boolean;
 }

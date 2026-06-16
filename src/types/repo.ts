@@ -1,5 +1,6 @@
 import type { BranchProtectionArgs } from "@pulumi/github/branchProtection";
 import * as v from "valibot";
+import type { RulesetConfig } from "./config";
 import { EnvironmentConfigSchema } from "./environment";
 import { LabelSetSchema } from "./label";
 import type { TeamAccess } from "./team";
@@ -115,6 +116,7 @@ export interface ResolvedRepoConfig
 	hasProjects: boolean;
 	hasDiscussions: boolean;
 	teams: TeamAccess[];
+	resolvedRepoRulesets: RulesetConfig[];
 	resolvedBranchProtection: Record<string, BranchProtectionEntry>;
 	squashMergeCommitTitle: SquashMergeCommitTitle;
 	squashMergeCommitMessage: SquashMergeCommitMessage;
