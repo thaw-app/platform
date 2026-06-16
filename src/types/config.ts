@@ -65,6 +65,22 @@ export const ReposFileSchema = v.pipe(
 				],
 			});
 		}
+		for (const dup of findDuplicates(
+			dataset.value.repos.map((r) => r.pulumiName ?? r.name),
+		)) {
+			addIssue({
+				message: `duplicate pulumiName "${dup}"`,
+				path: [
+					{
+						type: "object",
+						origin: "value",
+						input: dataset.value,
+						key: "repos",
+						value: dataset.value.repos,
+					},
+				],
+			});
+		}
 	}),
 );
 

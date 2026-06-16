@@ -12,14 +12,16 @@ import { createLabels } from "./labels";
 
 export default class OrgRepository extends ComponentResource {
 	constructor(
-		name: string,
+		resourcePrefix: string,
 		config: ResolvedRepoConfig,
 		teamResources: TeamResourceMap,
 		opts?: ComponentResourceOptions,
 	) {
-		super("custom:github:OrgRepository", name, {}, opts);
+		super("custom:github:OrgRepository", resourcePrefix, {}, opts);
 
 		const {
+			name: githubName,
+			adopt,
 			description,
 			visibility,
 			topics,
@@ -45,9 +47,9 @@ export default class OrgRepository extends ComponentResource {
 		const allowSquashMerge = mergeStrategies.includes("squash");
 
 		const repo = new github.Repository(
-			name,
+			resourcePrefix,
 			{
-				name,
+				name: githubName,
 				description,
 				visibility,
 				deleteBranchOnMerge,
@@ -67,20 +69,23 @@ export default class OrgRepository extends ComponentResource {
 					squashMergeCommitMessage,
 				}),
 			},
-			{ parent: this },
+			{
+				parent: this,
+				...(adopt ? { import: githubName } : {}),
+			},
 		);
 
 		if (!archived) {
 			if (teams.length > 0) {
 				const teamsComponent = new ComponentResource(
 					"custom:github:OrgRepositoryTeams",
-					`${name}-teams`,
+					`${resourcePrefix}-teams`,
 					{},
 					{ parent: this },
 				);
 				for (const { slug, teamId, permission } of teams) {
 					new github.TeamRepository(
-						`${name}-team-${slug}`,
+						`${resourcePrefix}-team-${slug}`,
 						{ repository: repo.name, teamId, permission },
 						{
 							parent: teamsComponent,
@@ -95,14 +100,14 @@ export default class OrgRepository extends ComponentResource {
 			if (bpEntries.length > 0) {
 				const bpComponent = new ComponentResource(
 					"custom:github:OrgRepositoryBranchProtection",
-					`${name}-branch-protection`,
+					`${resourcePrefix}-branch-protection`,
 					{},
 					{ parent: this },
 				);
 				for (const [pattern, protection] of bpEntries) {
 					createBranchProtection(
 						{
-							resourceName: `${name}-bp-${pattern.replace(/[/*?[\]]/g, "-")}`,
+							resourceName: `${resourcePrefix}-bp-${pattern.replace(/[/*?[\]]/g, "-")}`,
 							pattern,
 							protection,
 							repo,
@@ -117,7 +122,7 @@ export default class OrgRepository extends ComponentResource {
 
 			createEnvironments(
 				{
-					resourcePrefix: name,
+					resourcePrefix,
 					environments: environments ?? [],
 					repo,
 					teamResources,
@@ -126,20 +131,13 @@ export default class OrgRepository extends ComponentResource {
 			);
 
 			if (labels && Object.keys(labels).length > 0) {
-				createLabels({ resourcePrefix: name, labels, repo }, { parent: this });
+				createLabels({ resourcePrefix, labels, repo }, { parent: this });
 			}
 
-			createCodeowners(
-				name,
-				repo,
-				defaultBranch,
-				codeownersContent,
-				autoInit ?? false,
-				{
-					parent: this,
-					dependsOn: [repo],
-				},
-			);
+			createCodeowners(resourcePrefix, repo, defaultBranch, codeownersContent, {
+				parent: this,
+				dependsOn: [repo],
+			});
 		}
 
 		this.registerOutputs();

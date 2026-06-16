@@ -7,9 +7,9 @@
 # express "any one of" — acceptAnyOf is validated here; pin a name per-repo via
 # branchProtection when needed.
 #
-# GitHub organization rulesets require a Team or Enterprise org plan. On Free,
-# POST /orgs/{org}/rulesets returns 404 — set enableRulesets: false on the
-# stack until thaw-app is upgraded, or enforce branch policy per-repo / in the UI.
+# On GitHub Free (enableRulesets: false), org rulesets are not available (404).
+# The same policy is bootstrapped as per-repo branch protection for every entry
+# in repos.yaml. Set enableRulesets: true only if the org upgrades to Team+.
 rulesets:
   - id: repo-main-default
     name: Default branch protection

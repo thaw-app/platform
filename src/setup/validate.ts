@@ -6,6 +6,7 @@ import type {
 	RulesetConfig,
 	TeamsFile,
 } from "@/types";
+import { rulesetAppliesToRepo } from "./rulesets";
 import type { ValidationIssue } from "./types";
 import { issue, normalizeBranchPattern } from "./utils";
 
@@ -49,15 +50,6 @@ function repoCondition(r: RulesetConfig): RepoCondition {
 function repoSetsOverlap(a: RepoCondition, b: RepoCondition): boolean {
 	if (a.includes.includes("~ALL") || b.includes.includes("~ALL")) return true;
 	return a.includes.some((name) => b.includes.includes(name));
-}
-
-function rulesetAppliesToRepo(r: RulesetConfig, repoName: string): boolean {
-	const cond = repoCondition(r);
-	if (cond.excludes.includes(repoName)) return false;
-	if (cond.includes.includes("~ALL") || cond.includes.includes(repoName))
-		return true;
-	// Wildcard patterns other than ~ALL: conservative match
-	return cond.includes.some((p) => p.includes("*"));
 }
 
 function validateTeamRefs(config: InfraConfig): ValidationIssue[] {

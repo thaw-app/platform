@@ -3,8 +3,9 @@
 # Pulumi-managed repositories for thaw-app.
 # Out of scope (manual admin, not listed here): Thaw, AXSwift
 #
-# Branch enforcement is org-wide via config/rulesets.yaml — do not duplicate
-# branchProtection here unless a repo needs an explicit exception.
+# Branch enforcement is defined in config/rulesets.yaml and applied per-repo
+# when enableRulesets is false (GitHub Free). Use branchProtection here only
+# for repo-specific overrides (e.g. pin a CI check name).
 repos:
   - name: website
     description: Thaw project website and Sparkle appcast (GitHub Pages).
@@ -47,8 +48,23 @@ repos:
       - squash
     deleteBranchOnMerge: true
     autoInit: false
+    adopt: true
 
-  - name: dot-github
+  - name: raycast-extension
+    description: Control Thaw directly from Raycast. Toggle visibility sections, search menu bar items, and open settings without touching your mouse.
+    visibility: public
+    topics:
+      - thaw
+      - macos
+      - raycast-extension
+    mergeStrategies:
+      - squash
+    deleteBranchOnMerge: true
+    autoInit: false
+    adopt: true
+
+  - name: .github
+    pulumiName: dot-github
     description: Shared organization workflows, issue templates, and defaults.
     visibility: public
     topics:
@@ -58,7 +74,7 @@ repos:
     mergeStrategies:
       - squash
     deleteBranchOnMerge: true
-    autoInit: true
+    autoInit: false
 
   - name: org-ci
     description: Organization-wide CI/CD workflows and automation scripts.

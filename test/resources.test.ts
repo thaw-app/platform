@@ -48,6 +48,8 @@ const resolvedRepo = (
 	overrides: Partial<ResolvedRepoConfig> = {},
 ): ResolvedRepoConfig => ({
 	name: "test-repo",
+	pulumiName: "test-repo",
+	organization: "acme-org",
 	description: "d",
 	visibility: "public",
 	mergeStrategies: ["squash"],
@@ -102,7 +104,7 @@ function provisionOrgRepository(
 	config: ResolvedRepoConfig,
 	teams: Record<string, github.Team> = {},
 ): void {
-	new OrgRepository(name, config, teams);
+	new OrgRepository(name, config, teams); // NOSONAR
 }
 
 describe("OrgRepository", () => {
@@ -203,32 +205,55 @@ describe("OrgRepository", () => {
 		provisionOrgRepository(
 			"r",
 			resolvedRepo({
-				autoInit: true,
 				codeownersContent: "* @acme-org/maintainers\n",
 			}),
 			{},
 		);
 		await settle();
 
-		expect(findByType("github:index/branch:Branch")).toHaveLength(0);
-
 		const files = findByType("github:index/repositoryFile:RepositoryFile");
-		expect(files).toHaveLength(2);
+		expect(files).toHaveLength(1);
 
-		const bootstrap = files.find((f) => f.inputs.file === "README.md");
-		expect(bootstrap?.inputs.content).toContain("# r\n");
-		expect(bootstrap?.inputs.autocreateBranch).toBe(true);
-		expect(bootstrap?.inputs.autocreateBranchSourceBranch).toBe("main");
-
-		const codeowners = files.find(
-			(f) => f.inputs.file === ".github/CODEOWNERS",
-		);
-		expect(codeowners?.inputs.content).toBe("* @acme-org/maintainers");
-		expect(codeowners?.inputs.overwriteOnCreate).toBe(true);
-		expect(codeowners?.inputs.autocreateBranch).toBeUndefined();
+		const codeowners = first(files);
+		expect(codeowners.inputs.file).toBe(".github/CODEOWNERS");
+		expect(codeowners.inputs.content).toBe("* @acme-org/maintainers");
+		expect(codeowners.inputs.overwriteOnCreate).toBe(true);
+		expect("autocreateBranch" in codeowners.inputs).toBe(false);
 	});
 
-	it("syncs CODEOWNERS without Branch when autoInit is false", async () => {
+	it("adopts an existing GitHub repository when adopt is true", async () => {
+		provisionOrgRepository(
+			"r",
+			resolvedRepo({
+				name: "existing",
+				adopt: true,
+				organization: "acme-org",
+			}),
+			{},
+		);
+		await settle();
+
+		const repo = first(findByType("github:index/repository:Repository"));
+		expect(repo.inputs.name).toBe("existing");
+	});
+
+	it("uses pulumiName for resources and name for the GitHub repo", async () => {
+		provisionOrgRepository(
+			"dot-github",
+			resolvedRepo({
+				name: ".github",
+				pulumiName: "dot-github",
+			}),
+			{},
+		);
+		await settle();
+
+		const repo = first(findByType("github:index/repository:Repository"));
+		expect(repo.name).toBe("dot-github");
+		expect(repo.inputs.name).toBe(".github");
+	});
+
+	it("syncs CODEOWNERS without bootstrap when autoInit is false", async () => {
 		provisionOrgRepository(
 			"r",
 			resolvedRepo({

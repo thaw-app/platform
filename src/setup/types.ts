@@ -1,4 +1,4 @@
-import type { LabelSet, OrgConfig, TeamAccess } from "@/types";
+import type { LabelSet, OrgConfig, RulesetConfig, TeamAccess } from "@/types";
 
 export interface ValidationIssue {
 	path: string;
@@ -12,4 +12,6 @@ export interface RepoBuildContext {
 	labels: LabelSet;
 	organization: string;
 	codeownersContent: string;
+	rulesets: RulesetConfig[];
+	bootstrapBranchProtection: boolean;
 }

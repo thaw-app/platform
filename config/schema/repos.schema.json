@@ -38,6 +38,12 @@
 					"autoInit": {
 						"type": "boolean"
 					},
+					"adopt": {
+						"type": "boolean"
+					},
+					"pulumiName": {
+						"type": "string"
+					},
 					"archived": {
 						"type": "boolean"
 					},
@@ -112,6 +118,9 @@
 									"type": "boolean"
 								},
 								"requireConversationResolution": {
+									"type": "boolean"
+								},
+								"requireLastPushApproval": {
 									"type": "boolean"
 								},
 								"allowsForcePushes": {

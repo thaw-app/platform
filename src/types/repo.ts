@@ -34,6 +34,7 @@ const BranchProtectionSchema = v.strictObject({
 	requireSignedCommits: v.optional(v.boolean()),
 	requiredLinearHistory: v.optional(v.boolean()),
 	requireConversationResolution: v.optional(v.boolean()),
+	requireLastPushApproval: v.optional(v.boolean()),
 	allowsForcePushes: v.optional(v.boolean()),
 	allowsDeletions: v.optional(v.boolean()),
 	enforceAdmins: v.optional(v.boolean()),
@@ -59,6 +60,8 @@ export const RepoConfigSchema = v.pipe(
 		mergeStrategies: v.optional(v.array(MergeStrategySchema)),
 		deleteBranchOnMerge: v.optional(v.boolean()),
 		autoInit: v.optional(v.boolean()),
+		adopt: v.optional(v.boolean()),
+		pulumiName: v.optional(v.string()),
 		archived: v.optional(v.boolean()),
 		hasIssues: v.optional(v.boolean()),
 		hasWiki: v.optional(v.boolean()),
@@ -117,6 +120,8 @@ export interface ResolvedRepoConfig
 	squashMergeCommitMessage: SquashMergeCommitMessage;
 	defaultBranch: string;
 	codeownersContent: string;
+	pulumiName: string;
+	organization: string;
 }
 
 export type RepoVisibility = v.InferOutput<typeof RepoVisibilitySchema>;
