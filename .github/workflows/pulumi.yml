@@ -37,6 +37,17 @@ jobs:
           requested-token-type: urn:pulumi:token-type:access_token:personal
           scope: user:diazdesandi
 
+      - name: Verify GitHub PAT for provider
+        run: |
+          if [ -z "$PULUMI_GITHUB_TOKEN" ]; then
+            echo "::error::Repository secret PULUMI_GITHUB_TOKEN is missing or empty."
+            echo "::error::Add a classic PAT (admin:org + repo) under Settings → Secrets → Actions."
+            echo "::error::Pulumi Cloud stack github:token is not used in CI — Actions always sets GITHUB_TOKEN unless overridden here."
+            exit 1
+          fi
+        env:
+          PULUMI_GITHUB_TOKEN: ${{ secrets.PULUMI_GITHUB_TOKEN }}
+
       - name: Run Pulumi ${{ inputs.command }}
         uses: pulumi/actions@v7
         env:
