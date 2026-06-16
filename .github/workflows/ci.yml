@@ -2,9 +2,18 @@ name: CI/CD
 on:
   pull_request:
     branches: [main]
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
   push:
     branches: [main]
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
   merge_group:
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
   workflow_dispatch:
 
 permissions:
