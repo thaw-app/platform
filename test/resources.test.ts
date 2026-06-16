@@ -204,6 +204,7 @@ describe("OrgRepository", () => {
 		expect(files).toHaveLength(2);
 
 		const bootstrap = files.find((f) => f.inputs.file === "README.md");
+		expect(bootstrap?.inputs.content).toContain("# r\n");
 		expect(bootstrap?.inputs.autocreateBranch).toBe(true);
 		expect(bootstrap?.inputs.autocreateBranchSourceBranch).toBe("main");
 
