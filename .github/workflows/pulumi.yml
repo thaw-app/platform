@@ -39,6 +39,10 @@ jobs:
 
       - name: Run Pulumi ${{ inputs.command }}
         uses: pulumi/actions@v7
+        env:
+          # Override the job's default GITHUB_TOKEN — Actions' integration token
+          # cannot manage org teams, labels, or cross-repo resources.
+          GITHUB_TOKEN: ${{ secrets.PULUMI_GITHUB_TOKEN }}
         with:
           command: ${{ inputs.command }}
           stack-name: diazdesandi/dev
