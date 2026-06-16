@@ -4,38 +4,122 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=thaw-app_platform&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=thaw-app_platform)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=thaw-app_platform&metric=coverage)](https://sonarcloud.io/summary/new_code?id=thaw-app_platform)
 
-Platform configuration for the [`thaw-app`](https://github.com/thaw-app) GitHub organization — repositories, teams, branch rulesets, labels, and CODEOWNERS — declared in YAML under [`config/`](config/) and provisioned with
-[Pulumi](https://www.pulumi.com/) + the [`@pulumi/github`](https://www.pulumi.com/registry/packages/github/)
-provider. Runs on [Bun](https://bun.sh/).
+Platform configuration for the [`thaw-app`](https://github.com/thaw-app) GitHub organization — repositories, teams, branch rulesets, labels, and CODEOWNERS — declared in YAML under [`config/`](config/) and provisioned with [Pulumi](https://www.pulumi.com/) and the [`@pulumi/github`](https://www.pulumi.com/registry/packages/github/) provider. Runs on [Bun](https://bun.sh/).
 
 This repository is the **control plane** for that org: it lives at [`thaw-app/platform`](https://github.com/thaw-app/platform), is not listed in [`config/repos.yaml`](config/repos.yaml), and is not provisioned by its own Pulumi program.
 
-## How it works
+## Architecture
 
-```text
-config/*.yaml ──parse/validate──▶ resolve defaults ──▶ Pulumi resources
-   (valibot)         (src/setup)        (src/setup)       (src/resources)
+```mermaid
+flowchart TB
+  subgraph config["config/*.yaml"]
+    org["org.yaml<br/><i>defaults</i>"]
+    repos["repos.yaml"]
+    teams["teams.yaml"]
+    members["members.yaml"]
+    rulesets["rulesets.yaml"]
+    labels["labels.yaml"]
+    codeowners["codeowners.yaml"]
+  end
+
+  subgraph setup["src/setup"]
+    loader["loader.ts<br/>valibot parse"]
+    validate["validate.ts<br/>cross-refs"]
+    membersMerge["members.ts<br/>merge memberships"]
+    resolve["resolve.ts<br/>defaults + Pulumi inputs"]
+  end
+
+  subgraph program["Pulumi program (index.ts → org.ts)"]
+    teamsRes["teams.ts<br/>teams + memberships"]
+    rulesetsRes["rulesets.ts<br/>org rulesets"]
+    repoRes["OrgRepository<br/>(repo.ts)"]
+  end
+
+  subgraph perRepo["Per-repository resources"]
+    teamAccess["TeamRepository access"]
+    branchBp["Branch protection<br/><i>exceptions only</i>"]
+    envs["Environments"]
+    repoLabels["Labels"]
+    co["CODEOWNERS file"]
+  end
+
+  subgraph github["GitHub org (thaw-app)"]
+    ghTeams["Teams"]
+    ghRulesets["Rulesets"]
+    ghRepos["Repositories"]
+  end
+
+  config --> loader
+  loader --> validate
+  loader --> membersMerge
+  membersMerge --> validate
+  validate --> resolve
+  resolve --> program
+  teamsRes --> ghTeams
+  rulesetsRes --> ghRulesets
+  repoRes --> perRepo
+  perRepo --> ghRepos
+
+  teamsRes -.-> repoRes
+  rulesetsRes -.-> ghRepos
 ```
 
-1. **Load & validate** — [`src/setup/loader.ts`](src/setup/loader.ts) parses each YAML
-   file against a [valibot](https://valibot.dev/) schema in [`src/types/`](src/types/),
-   then runs cross-reference checks ([`src/setup/validate.ts`](src/setup/validate.ts)):
-   unknown team/repo references, branch patterns claimed by multiple rulesets, and
-   labels defined in multiple groups.
-2. **Resolve** — [`src/setup/resolve.ts`](src/setup/resolve.ts) fills each repo in from
-   org-wide `defaults` and translates config into Pulumi inputs.
-3. **Provision** — [`src/org.ts`](src/org.ts) creates teams, org rulesets, and one
-   `OrgRepository` component ([`src/resources/repo.ts`](src/resources/repo.ts)) per repo,
-   which owns that repo's team access, branch protection, environments, labels, and
-   CODEOWNERS file.
+Source: [`docs/architecture.mmd`](docs/architecture.mmd). Edit the `.mmd` file and keep the README block in sync when the flow changes.
 
-Schemas use `strictObject`, so an unknown or misspelled YAML key fails the run instead
-of being silently ignored.
+## Repository layout
 
-> **Branch enforcement:** org **rulesets** ([`config/rulesets.yaml`](config/rulesets.yaml))
-> are the source of truth for default-branch policy org-wide. Per-repo `branchProtection`
-> is for explicit exceptions only. Org rulesets are gated by the `enableRulesets`
-> stack config — set it to `true` once the org is on GitHub Team or Enterprise.
+| Path | Role |
+| --- | --- |
+| [`config/`](config/) | Declarative org config (YAML) and generated JSON Schemas for editor validation |
+| [`src/setup/`](src/setup/) | Load, validate, and resolve config into Pulumi inputs |
+| [`src/types/`](src/types/) | Valibot schemas and TypeScript types |
+| [`src/resources/`](src/resources/) | Pulumi resources (teams, rulesets, per-repo components) |
+| [`src/org.ts`](src/org.ts) | Program entry: wires setup output to resources |
+| [`test/`](test/) | Unit tests (loader, validation, resolve, resources, schema generation) |
+| [`.github/workflows/`](.github/workflows/) | CI/CD, reusable Pulumi workflow, drift detection |
+
+## How it works
+
+1. **Load & validate** — [`src/setup/loader.ts`](src/setup/loader.ts) parses each YAML file against a [valibot](https://valibot.dev/) schema in [`src/types/`](src/types/), merges member records from [`config/members.yaml`](config/members.yaml) into team definitions ([`src/setup/members.ts`](src/setup/members.ts)), then runs cross-reference checks ([`src/setup/validate.ts`](src/setup/validate.ts)): unknown team/repo references, branch patterns claimed by multiple rulesets, and labels defined in multiple groups.
+2. **Resolve** — [`src/setup/resolve.ts`](src/setup/resolve.ts) fills each repo from org-wide `defaults` in [`config/org.yaml`](config/org.yaml) and translates config into Pulumi inputs.
+3. **Provision** — [`src/org.ts`](src/org.ts) creates teams (when `enableTeams` is on), org rulesets (when `enableRulesets` is on), and one `OrgRepository` component ([`src/resources/repo.ts`](src/resources/repo.ts)) per entry in `repos.yaml`. Each component owns that repo's team access, optional branch-protection exceptions, deployment environments, labels, and synced `.github/CODEOWNERS`.
+
+Schemas use `strictObject`, so an unknown or misspelled YAML key fails the run instead of being silently ignored.
+
+> **Branch enforcement:** org **rulesets** ([`config/rulesets.yaml`](config/rulesets.yaml)) are the source of truth for default-branch policy org-wide. Per-repo `branchProtection` in `repos.yaml` is for explicit exceptions only. Org rulesets are gated by the `enableRulesets` stack config — set it to `true` once the org is on GitHub Team or Enterprise.
+
+## CI/CD
+
+```mermaid
+flowchart LR
+  subgraph triggers["Triggers"]
+    pr["pull_request → main"]
+    push["push → main"]
+    dispatch["workflow_dispatch"]
+  end
+
+  subgraph ci["CI/CD workflow"]
+    test["test<br/>typecheck · biome · bun test · Sonar"]
+    preview["preview<br/>pulumi preview + PR comment"]
+    deploy["deploy<br/>pulumi up"]
+  end
+
+  pr --> test
+  push --> test
+  dispatch --> test
+  test --> preview
+  test --> deploy
+  pr -.-> preview
+  push -.-> deploy
+```
+
+| Workflow | File | When it runs |
+| --- | --- | --- |
+| **CI/CD** | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | PRs and pushes to `main` (markdown-only changes are ignored), merge queue, or manual dispatch |
+| **Pulumi Setup** | [`.github/workflows/pulumi.yml`](.github/workflows/pulumi.yml) | Reusable: `preview` on PRs, `up` on `main`, or `preview --expect-no-changes` for drift |
+| **Drift detection** | [`.github/workflows/drift.yml`](.github/workflows/drift.yml) | Weekly (Mondays 06:17 UTC) or `workflow_dispatch` |
+
+On `main`, the `deploy` job runs `pulumi up` against stack `diazdesandi/dev` after `test` passes. CI authenticates to Pulumi Cloud via OIDC; the GitHub provider uses the `PULUMI_GITHUB_TOKEN` repository secret (Actions' default `GITHUB_TOKEN` cannot manage org teams, labels, or cross-repo resources).
 
 ## Config files
 
@@ -53,12 +137,7 @@ GitHub has no org-level CODEOWNERS file. This repo keeps one canonical template 
 
 ### Editor autocomplete
 
-Each YAML file carries a `# yaml-language-server: $schema=...` header pointing at a
-generated JSON Schema in [`config/schema/`](config/schema/). With the
-[YAML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml)
-(recommended in [`.vscode/extensions.json`](.vscode/extensions.json)) you get
-autocomplete and inline validation as you type. Regenerate the schemas after changing a
-valibot schema:
+Each YAML file carries a `# yaml-language-server: $schema=...` header pointing at a generated JSON Schema in [`config/schema/`](config/schema/). With the [YAML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) for VS Code you get autocomplete and inline validation as you type. Regenerate the schemas after changing a valibot schema:
 
 ```sh
 bun run schema
@@ -76,25 +155,19 @@ pulumi config set github:token --secret   # first-time only; already set on the 
 pulumi preview                            # dry-run against thaw-app
 ```
 
-CI authenticates to Pulumi Cloud via OIDC ([`.github/workflows/pulumi.yml`](.github/workflows/pulumi.yml)); local runs need `pulumi login`.
+Local runs need `pulumi login`. CI uses OIDC instead of a local token.
 
 ## Common tasks
 
-**Add a repository** — append an entry to `config/repos.yaml` (only `name` and
-`description` are required; everything else inherits from `org.yaml` defaults). Grant
-team access in `config/teams.yaml` under `repoAccess`.
+**Add a repository** — append an entry to `config/repos.yaml` (only `name` and `description` are required; everything else inherits from `org.yaml` defaults). Grant team access in `config/teams.yaml` under `repoAccess`.
 
-**Add a team** — add it under `teams:` in `config/teams.yaml`, then reference its `slug`
-in `repoAccess` and/or `config/members.yaml`.
+**Add a team** — add it under `teams:` in `config/teams.yaml`, then reference its `slug` in `repoAccess` and/or `config/members.yaml`.
 
-**Add a member** — append an entry to `config/members.yaml` with their `username` and
-team `slug`/`role` pairs.
+**Add a member** — append an entry to `config/members.yaml` with their `username` and team `slug`/`role` pairs.
 
-**Add a ruleset** — append to `config/rulesets.yaml`. A branch pattern may be owned by
-only one ruleset (validation enforces this).
+**Add a ruleset** — append to `config/rulesets.yaml`. A branch pattern may be owned by only one ruleset (validation enforces this).
 
-**Add a label** — add it under any group in `config/labels.yaml`. Label names must be
-unique across groups.
+**Add a label** — add it under any group in `config/labels.yaml`. Label names must be unique across groups.
 
 ## Scripts
 
@@ -108,13 +181,18 @@ pulumi preview      # dry-run (stack dev)
 pulumi up           # apply (stack dev)
 ```
 
+Pre-commit hooks ([`.husky/pre-commit`](.husky/pre-commit)) run `biome lint`, `biome check`, and `bun test`.
+
 ## Stack config
 
-Per-stack settings use the `thaw-config:` namespace (project name from [`Pulumi.yaml`](Pulumi.yaml)):
+Per-stack settings use the `thaw-config:` namespace (Pulumi project name from [`Pulumi.yaml`](Pulumi.yaml); npm package name is `platform`).
 
-- `github:owner` / `github:token` — provider credentials (token stored as a secret).
-- `thaw-config:enableTeams` (default `true`) — create teams and memberships.
-- `thaw-config:enableRulesets` (default `true`) — create org-level rulesets.
+| Key | Purpose |
+| --- | --- |
+| `github:owner` | GitHub organization (`thaw-app`) |
+| `github:token` | Provider credential (secret; set on stack for local runs) |
+| `thaw-config:enableTeams` (default `true`) | Create teams and memberships |
+| `thaw-config:enableRulesets` (default `true`) | Create org-level rulesets |
 
 ### Stack
 
@@ -122,7 +200,7 @@ Per-stack settings use the `thaw-config:` namespace (project name from [`Pulumi.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `dev` | `diazdesandi` (personal) | Governs the live [`thaw-app`](https://github.com/thaw-app) org | [CI/CD](.github/workflows/ci.yml) `deploy` job on push to `main` | `thaw-app` | `false`¹ | `true` | [`Pulumi.dev.yaml`](Pulumi.dev.yaml) |
 
-Pulumi project: **`thaw-config`** (from [`Pulumi.yaml`](Pulumi.yaml)). Stack reference: **`diazdesandi/dev`**. `github:owner` is the **GitHub** org (`thaw-app`), not your Pulumi login. CI and drift detection target **`diazdesandi/dev`** (see [`.github/workflows/pulumi.yml`](.github/workflows/pulumi.yml)).
+Pulumi project: **`thaw-config`**. Stack reference: **`diazdesandi/dev`**. `github:owner` is the **GitHub** org, not your Pulumi login.
 
 ```sh
 pulumi config --stack dev   # inspect thaw-config:* and github:* keys

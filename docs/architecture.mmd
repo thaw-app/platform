@@ -1,0 +1,51 @@
+flowchart TB
+  subgraph config["config/*.yaml"]
+    org["org.yaml<br/><i>defaults</i>"]
+    repos["repos.yaml"]
+    teams["teams.yaml"]
+    members["members.yaml"]
+    rulesets["rulesets.yaml"]
+    labels["labels.yaml"]
+    codeowners["codeowners.yaml"]
+  end
+
+  subgraph setup["src/setup"]
+    loader["loader.ts<br/>valibot parse"]
+    validate["validate.ts<br/>cross-refs"]
+    membersMerge["members.ts<br/>merge memberships"]
+    resolve["resolve.ts<br/>defaults + Pulumi inputs"]
+  end
+
+  subgraph program["Pulumi program (index.ts → org.ts)"]
+    teamsRes["teams.ts<br/>teams + memberships"]
+    rulesetsRes["rulesets.ts<br/>org rulesets"]
+    repoRes["OrgRepository<br/>(repo.ts)"]
+  end
+
+  subgraph perRepo["Per-repository resources"]
+    teamAccess["TeamRepository access"]
+    branchBp["Branch protection<br/><i>exceptions only</i>"]
+    envs["Environments"]
+    repoLabels["Labels"]
+    co["CODEOWNERS file"]
+  end
+
+  subgraph github["GitHub org (thaw-app)"]
+    ghTeams["Teams"]
+    ghRulesets["Rulesets"]
+    ghRepos["Repositories"]
+  end
+
+  config --> loader
+  loader --> validate
+  loader --> membersMerge
+  membersMerge --> validate
+  validate --> resolve
+  resolve --> program
+  teamsRes --> ghTeams
+  rulesetsRes --> ghRulesets
+  repoRes --> perRepo
+  perRepo --> ghRepos
+
+  teamsRes -.-> repoRes
+  rulesetsRes -.-> ghRepos
