@@ -11,9 +11,7 @@ on:
       - "**/*.md"
       - "docs/**"
   merge_group:
-    paths-ignore:
-      - "**/*.md"
-      - "docs/**"
+    branches: [main]
   workflow_dispatch:
 
 permissions:
