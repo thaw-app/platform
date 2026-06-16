@@ -1,6 +1,6 @@
 import github from "@pulumi/github";
 import pulumi from "@pulumi/pulumi";
-import { normalizeBranchPattern } from "@/setup/utils";
+import { normalizeRulesetRefName } from "@/setup/utils";
 import type { RulesetConfig, RulesetRules } from "@/types";
 
 // Org rulesets (enableRulesets: true) apply uniformly when the org is on Team+.
@@ -150,12 +150,14 @@ export function createRepositoryRulesets(
 	resourcePrefix: string,
 	repo: github.Repository,
 	rulesets: RulesetConfig[],
-	defaultBranch: string,
 	opts?: pulumi.ResourceOptions,
 ): github.RepositoryRuleset[] {
 	return rulesets.map((r) => {
-		const refIncludes = r.conditions.refName.includes.map((pattern) =>
-			normalizeBranchPattern(pattern, defaultBranch),
+		const refIncludes = r.conditions.refName.includes.map(
+			normalizeRulesetRefName,
+		);
+		const refExcludes = (r.conditions.refName.excludes ?? []).map(
+			normalizeRulesetRefName,
 		);
 
 		return new github.RepositoryRuleset(
@@ -168,7 +170,7 @@ export function createRepositoryRulesets(
 				conditions: {
 					refName: {
 						includes: refIncludes,
-						excludes: r.conditions.refName.excludes ?? [],
+						excludes: refExcludes,
 					},
 				},
 				rules: toRepositoryRulesetRules(r.rules, r),

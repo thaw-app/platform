@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=./schema/rulesets.schema.json
 #
-# Org-wide branch rules for managed repositories (~ALL). Mirrors the thaw-app
-# default-branch policy: squash-only merges, 2 reviews, CODEOWNERS, merge queue.
+# Org-wide default-branch rules for managed repositories (~ALL). All work merges
+# to main; squash-only merges, 2 reviews, CODEOWNERS.
 # Managed-repo workflows should expose one CI job named `ci`, `build`, or `test`
 # (and run on merge_group when merge queue is enabled). GitHub rulesets cannot
 # express "any one of" — acceptAnyOf is validated here; pin a name per-repo via
@@ -19,7 +19,7 @@ rulesets:
       refName:
         includes:
           - "~DEFAULT_BRANCH"
-    rules: &default_branch_rules
+    rules:
       creation: true
       update: false
       deletion: true
@@ -50,13 +50,3 @@ rulesets:
         groupingStrategy: ALLGREEN
       requiredDeployments:
         enabled: false
-
-  - id: release-branch-protection
-    name: Release branch protection
-    target: branch
-    enforcement: active
-    conditions:
-      refName:
-        includes:
-          - "refs/heads/release/*"
-    rules: *default_branch_rules

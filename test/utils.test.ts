@@ -3,6 +3,7 @@ import {
 	assertReviewerTeamsCreatable,
 	normalizeActors,
 	normalizeBranchPattern,
+	normalizeRulesetRefName,
 } from "@/setup";
 import type { RepoConfig } from "@/types";
 
@@ -22,6 +23,21 @@ describe("normalizeBranchPattern", () => {
 	it("leaves bare patterns untouched", () => {
 		expect(normalizeBranchPattern("main", "main")).toBe("main");
 		expect(normalizeBranchPattern("feature/*", "main")).toBe("feature/*");
+	});
+});
+
+describe("normalizeRulesetRefName", () => {
+	it("passes through ruleset magic tokens and refs/heads patterns", () => {
+		expect(normalizeRulesetRefName("~DEFAULT_BRANCH")).toBe("~DEFAULT_BRANCH");
+		expect(normalizeRulesetRefName("~ALL")).toBe("~ALL");
+		expect(normalizeRulesetRefName("refs/heads/release/*")).toBe(
+			"refs/heads/release/*",
+		);
+	});
+
+	it("prefixes bare branch patterns for the ruleset API", () => {
+		expect(normalizeRulesetRefName("main")).toBe("refs/heads/main");
+		expect(normalizeRulesetRefName("release/*")).toBe("refs/heads/release/*");
 	});
 });
 

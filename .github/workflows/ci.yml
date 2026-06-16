@@ -29,6 +29,8 @@ jobs:
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # full history for SonarCloud SCM blame / issue assignment
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2.2.0
