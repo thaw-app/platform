@@ -50,6 +50,19 @@ repos:
     autoInit: false
     adopt: true
 
+  - name: raycast-extension
+    description: Control Thaw directly from Raycast. Toggle visibility sections, search menu bar items, and open settings without touching your mouse.
+    visibility: public
+    topics:
+      - thaw
+      - macos
+      - raycast-extension
+    mergeStrategies:
+      - squash
+    deleteBranchOnMerge: true
+    autoInit: false
+    adopt: true
+
   - name: .github
     pulumiName: dot-github
     description: Shared organization workflows, issue templates, and defaults.

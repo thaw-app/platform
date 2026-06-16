@@ -104,7 +104,7 @@ function provisionOrgRepository(
 	config: ResolvedRepoConfig,
 	teams: Record<string, github.Team> = {},
 ): void {
-	new OrgRepository(name, config, teams);
+	new OrgRepository(name, config, teams); // NOSONAR
 }
 
 describe("OrgRepository", () => {

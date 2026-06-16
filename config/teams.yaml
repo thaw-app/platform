@@ -29,6 +29,12 @@ repoAccess:
     - team: contributors
       permission: push
 
+  raycast-extension:
+    - team: maintainers
+      permission: admin
+    - team: contributors
+      permission: push
+
   ".github":
     - team: maintainers
       permission: admin

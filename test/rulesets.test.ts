@@ -94,7 +94,9 @@ describe("bootstrapBranchProtectionFromRulesets", () => {
 			[mainRuleset(), releaseRuleset()],
 			"main",
 		);
-		expect(Object.keys(bootstrapped).sort()).toEqual(["main", "release/*"]);
+		expect(
+			Object.keys(bootstrapped).sort((a, b) => a.localeCompare(b)),
+		).toEqual(["main", "release/*"]);
 		expect(bootstrapped.main?.requiredReviewCount).toBe(2);
 	});
 
@@ -103,7 +105,7 @@ describe("bootstrapBranchProtectionFromRulesets", () => {
 			enforcement: "disabled",
 			conditions: {
 				refName: { includes: ["~DEFAULT_BRANCH"] },
-				repositoryName: { includes: ["website"] },
+				repositoryName: { includes: ["website"], excludes: [] },
 			},
 		});
 		expect(
