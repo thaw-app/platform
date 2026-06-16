@@ -114,6 +114,9 @@
 								"requireConversationResolution": {
 									"type": "boolean"
 								},
+								"requireLastPushApproval": {
+									"type": "boolean"
+								},
 								"allowsForcePushes": {
 									"type": "boolean"
 								},

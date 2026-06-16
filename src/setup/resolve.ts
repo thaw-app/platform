@@ -7,6 +7,7 @@ import type {
 	TeamResourceMap,
 	TeamsConfig,
 } from "@/types";
+import { mergeRepoBranchProtection } from "./rulesets";
 import type { RepoBuildContext } from "./types";
 import { compact, normalizeActors, normalizeBranchPattern } from "./utils";
 
@@ -25,6 +26,7 @@ function toBranchProtectionEntry(
 			requiredApprovingReviewCount: config.requiredReviewCount,
 			dismissStaleReviews: config.dismissStaleReviews,
 			requireCodeOwnerReviews: config.requireCodeOwnerReviews,
+			requireLastPushApproval: config.requireLastPushApproval,
 		}),
 		...(dismissalRestrictions.length ? { dismissalRestrictions } : {}),
 	};
@@ -71,15 +73,26 @@ export function buildRepoConfig(
 	repo: RepoConfig,
 	ctx: RepoBuildContext,
 ): ResolvedRepoConfig {
-	const { defaults, teamAccess, labels, organization } = ctx;
+	const {
+		defaults,
+		teamAccess,
+		labels,
+		organization,
+		rulesets,
+		bootstrapBranchProtection,
+	} = ctx;
 	const { features } = defaults;
 
-	// Branch protection comes only from explicit per-repo config; org rulesets
-	// own branch enforcement. Keys are normalized so "main", "~DEFAULT_BRANCH",
-	// and "refs/heads/main" collapse to a single pattern.
+	const branchProtection = mergeRepoBranchProtection(
+		repo,
+		rulesets,
+		defaults.defaultBranch,
+		bootstrapBranchProtection,
+	);
+
 	const resolvedBranchProtection: Record<string, BranchProtectionEntry> =
 		Object.fromEntries(
-			Object.entries(repo.branchProtection ?? {}).map(([pattern, config]) => [
+			Object.entries(branchProtection).map(([pattern, config]) => [
 				normalizeBranchPattern(pattern, defaults.defaultBranch),
 				toBranchProtectionEntry(config, organization),
 			]),

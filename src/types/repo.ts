@@ -34,6 +34,7 @@ const BranchProtectionSchema = v.strictObject({
 	requireSignedCommits: v.optional(v.boolean()),
 	requiredLinearHistory: v.optional(v.boolean()),
 	requireConversationResolution: v.optional(v.boolean()),
+	requireLastPushApproval: v.optional(v.boolean()),
 	allowsForcePushes: v.optional(v.boolean()),
 	allowsDeletions: v.optional(v.boolean()),
 	enforceAdmins: v.optional(v.boolean()),

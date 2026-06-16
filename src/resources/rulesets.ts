@@ -1,12 +1,12 @@
 import github from "@pulumi/github";
 import type { RulesetConfig, RulesetRules } from "@/types";
 
-// Org-wide rulesets apply uniformly (~ALL repos). Per-repo branch protection is
-// intentionally avoided when the org ruleset covers enforcement; use
-// repos.yaml branchProtection only for repo-specific exceptions.
+// Org-wide rulesets apply uniformly (~ALL repos) when enableRulesets is true.
+// On Free tier, the same policy in rulesets.yaml is bootstrapped as per-repo
+// branch protection (see src/setup/rulesets.ts). Use repos.yaml branchProtection
+// only for repo-specific overrides.
 //
 // GitHub organization rulesets require a Team or Enterprise org plan (404 on Free).
-// Gate creation with the enableRulesets stack config until the org is upgraded.
 
 function toPulumiRules(
 	rules: RulesetRules,

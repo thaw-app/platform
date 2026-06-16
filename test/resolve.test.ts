@@ -23,6 +23,8 @@ const baseCtx = {
 	labels: {},
 	organization: "acme",
 	codeownersContent: "* @acme-org/maintainers\n",
+	rulesets: [],
+	bootstrapBranchProtection: false,
 };
 
 const repo = (overrides: Partial<RepoConfig> = {}): RepoConfig => ({
@@ -48,7 +50,7 @@ describe("buildRepoConfig", () => {
 		expect(built.visibility).toBe("public");
 	});
 
-	it("derives branch protection only from explicit repo config", () => {
+	it("derives branch protection only from explicit repo config when bootstrap is off", () => {
 		expect(buildRepoConfig(repo(), baseCtx).resolvedBranchProtection).toEqual(
 			{},
 		);

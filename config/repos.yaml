@@ -3,8 +3,9 @@
 # Pulumi-managed repositories for thaw-app.
 # Out of scope (manual admin, not listed here): Thaw, AXSwift
 #
-# Branch enforcement is org-wide via config/rulesets.yaml — do not duplicate
-# branchProtection here unless a repo needs an explicit exception.
+# Branch enforcement is defined in config/rulesets.yaml and applied per-repo
+# when enableRulesets is false (GitHub Free). Use branchProtection here only
+# for repo-specific overrides (e.g. pin a CI check name).
 repos:
   - name: website
     description: Thaw project website and Sparkle appcast (GitHub Pages).

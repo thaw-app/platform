@@ -37,6 +37,8 @@ export default async function setupOrg() {
 			labels,
 			organization,
 			codeownersContent,
+			rulesets,
+			bootstrapBranchProtection: !enableRulesets,
 		});
 		new OrgRepository(resolved.name, resolved, teamResources); // NOSONAR
 	}
