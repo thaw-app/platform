@@ -26,7 +26,7 @@ function bootstrapDefaultBranch(
 		{
 			repository: repo.name,
 			file: "README.md",
-			content: `# ${resourcePrefix}\n\nManaged by [thaw-platform](https://github.com/thaw-app/thaw-platform).\n`,
+			content: `# ${resourcePrefix}\n\nManaged by [platform](https://github.com/thaw-app/platform).\n`,
 			commitMessage: "chore: bootstrap default branch",
 			overwriteOnCreate: true,
 			autocreateBranch: true,

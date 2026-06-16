@@ -1,14 +1,14 @@
-# Thaw Platform
+# Platform
 
-[![CI/CD](https://github.com/thaw-app/thaw-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/thaw-app/thaw-platform/actions/workflows/ci.yml)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=thaw-app_thaw-platform&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=thaw-app_thaw-platform)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=thaw-app_thaw-platform&metric=coverage)](https://sonarcloud.io/summary/new_code?id=thaw-app_thaw-platform)
+[![CI/CD](https://github.com/thaw-app/platform/actions/workflows/ci.yml/badge.svg)](https://github.com/thaw-app/platform/actions/workflows/ci.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=thaw-app_platform&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=thaw-app_platform)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=thaw-app_platform&metric=coverage)](https://sonarcloud.io/summary/new_code?id=thaw-app_platform)
 
 Platform configuration for the [`thaw-app`](https://github.com/thaw-app) GitHub organization — repositories, teams, branch rulesets, labels, and CODEOWNERS — declared in YAML under [`config/`](config/) and provisioned with
 [Pulumi](https://www.pulumi.com/) + the [`@pulumi/github`](https://www.pulumi.com/registry/packages/github/)
 provider. Runs on [Bun](https://bun.sh/).
 
-This repository is the **control plane** for that org: it lives at [`thaw-app/thaw-platform`](https://github.com/thaw-app/thaw-platform), is not listed in [`config/repos.yaml`](config/repos.yaml), and is not provisioned by its own Pulumi program.
+This repository is the **control plane** for that org: it lives at [`thaw-app/platform`](https://github.com/thaw-app/platform), is not listed in [`config/repos.yaml`](config/repos.yaml), and is not provisioned by its own Pulumi program.
 
 ## How it works
 
