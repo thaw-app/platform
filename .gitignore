@@ -3,4 +3,5 @@
 .DS_Store
 stack-backup.json
 /coverage/
-.claude/settings.local.json
+.claude/
+.cursor
