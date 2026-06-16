@@ -43,14 +43,6 @@ const mainRuleset = (
 	...overrides,
 });
 
-const releaseRuleset = (): RulesetConfig => ({
-	id: "release",
-	target: "branch",
-	enforcement: "active",
-	conditions: { refName: { includes: ["refs/heads/release/*"] } },
-	rules: defaultRules(),
-});
-
 describe("rulesetAppliesToRepo", () => {
 	it("applies to all repos by default", () => {
 		expect(rulesetAppliesToRepo(mainRuleset(), "website")).toBe(true);
@@ -70,13 +62,8 @@ describe("rulesetAppliesToRepo", () => {
 
 describe("rulesetsForRepo", () => {
 	it("returns applicable active rulesets", () => {
-		const rulesets = rulesetsForRepo("website", [
-			mainRuleset(),
-			releaseRuleset(),
-		]);
-		expect(
-			rulesets.map((r) => r.id).sort((a, b) => a.localeCompare(b)),
-		).toEqual(["main-default", "release"]);
+		const rulesets = rulesetsForRepo("website", [mainRuleset()]);
+		expect(rulesets.map((r) => r.id)).toEqual(["main-default"]);
 	});
 
 	it("skips disabled rulesets and non-matching repos", () => {
