@@ -8,6 +8,8 @@ Platform configuration for the [`thaw-app`](https://github.com/thaw-app) GitHub 
 
 This repository is the **control plane** for that org: it lives at [`thaw-app/platform`](https://github.com/thaw-app/platform), is not listed in [`config/repos.yaml`](config/repos.yaml), and is not provisioned by its own Pulumi program.
 
+**Scope:** only repositories listed in [`config/repos.yaml`](config/repos.yaml) are managed here (teams, labels, CODEOWNERS, branch policy, and so on). Other org repos — notably **`Thaw`** and **`AXSwift`** — are administered manually and intentionally omitted from config (see the header comment in `repos.yaml`).
+
 ## Architecture
 
 ```mermaid
@@ -119,7 +121,17 @@ flowchart LR
 | **Pulumi Setup** | [`.github/workflows/pulumi.yml`](.github/workflows/pulumi.yml) | Reusable: `preview` on PRs, `up` on `main`, or `preview --expect-no-changes` for drift |
 | **Drift detection** | [`.github/workflows/drift.yml`](.github/workflows/drift.yml) | Weekly (Mondays 06:17 UTC) or `workflow_dispatch` |
 
-On `main`, the `deploy` job runs `pulumi up` against stack `diazdesandi/dev` after `test` passes. CI authenticates to Pulumi Cloud via OIDC; the GitHub provider uses the `PULUMI_GITHUB_TOKEN` repository secret (Actions' default `GITHUB_TOKEN` cannot manage org teams, labels, or cross-repo resources).
+On `main`, the `deploy` job runs `pulumi up` against stack `diazdesandi/dev` after `test` passes. CI authenticates to Pulumi Cloud via OIDC; the GitHub provider uses the `PULUMI_GITHUB_TOKEN` repository secret (Actions' default `GITHUB_TOKEN` cannot manage org teams, labels, or cross-repo resources). Only one of `preview` or `deploy` runs per workflow invocation — PRs preview, pushes to `main` deploy.
+
+### Secrets
+
+| Name | Where | Purpose |
+| --- | --- | --- |
+| `PULUMI_GITHUB_TOKEN` | GitHub Actions secret | Classic PAT with `admin:org` and `repo`; passed to the Pulumi GitHub provider as `GITHUB_TOKEN` in CI |
+| `SONAR_TOKEN` | GitHub Actions secret | SonarCloud analysis in the `test` job |
+| `github:token` | Pulumi stack config (`pulumi config set --secret`) | Same PAT scope for local `pulumi preview` / `pulumi up`; not read from Actions |
+
+Pulumi Cloud access in CI uses OIDC ([`pulumi/auth-actions`](.github/workflows/pulumi.yml)) — no long-lived Pulumi token in repository secrets.
 
 ## Config files
 
@@ -160,6 +172,8 @@ Local runs need `pulumi login`. CI uses OIDC instead of a local token.
 ## Common tasks
 
 **Add a repository** — append an entry to `config/repos.yaml` (only `name` and `description` are required; everything else inherits from `org.yaml` defaults). Grant team access in `config/teams.yaml` under `repoAccess`.
+
+Set `autoInit: true` (the default for current managed repos) when the repository may be empty at first apply. Pulumi creates the GitHub repo, bootstraps the default branch with a placeholder `README.md` if needed, then syncs `.github/CODEOWNERS` from [`config/codeowners.yaml`](config/codeowners.yaml) ([`src/resources/codeowners.ts`](src/resources/codeowners.ts)). With `autoInit: false`, the repo must already have a default branch with at least one commit before CODEOWNERS can be written — use that only when importing an existing repo you do not want auto-seeded.
 
 **Add a team** — add it under `teams:` in `config/teams.yaml`, then reference its `slug` in `repoAccess` and/or `config/members.yaml`.
 
