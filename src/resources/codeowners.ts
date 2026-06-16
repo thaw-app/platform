@@ -28,29 +28,25 @@ export function createCodeowners(
 	const baseOpts = mergeOptions(opts, { dependsOn: [repo] });
 	const fileInputs = fileArgs(repo, defaultBranch, trimmed);
 
-	if (!autoInit) {
-		// Empty repos have no git refs. Without the deprecated autocreateBranch
-		// flag, the first CODEOWNERS commit only succeeds once a branch exists
-		// (e.g. from a prior apply or manual bootstrap). Prefer autoInit: true.
+	if (autoInit) {
+		// github.Branch requires an existing commit (409 on empty repos). autoInit on
+		// the Repository only applies at creation time — for already-empty repos,
+		// autocreateBranch on the first file seeds the default branch.
 		return new github.RepositoryFile(
 			`${resourcePrefix}-codeowners`,
-			fileInputs,
+			{
+				...fileInputs,
+				autocreateBranch: true,
+				autocreateBranchSourceBranch: defaultBranch,
+			},
 			baseOpts,
 		);
 	}
 
-	const branch = new github.Branch(
-		`${resourcePrefix}-codeowners-branch`,
-		{
-			repository: repo.name,
-			branch: defaultBranch,
-		},
-		baseOpts,
-	);
-
+	// Non-init repos must already have a default branch (manual bootstrap).
 	return new github.RepositoryFile(
 		`${resourcePrefix}-codeowners`,
 		fileInputs,
-		mergeOptions(baseOpts, { dependsOn: [branch] }),
+		baseOpts,
 	);
 }
