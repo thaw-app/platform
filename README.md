@@ -109,12 +109,11 @@ flowchart LR
   end
 
   pr --> test
-  push --> test
   dispatch --> test
   test --> preview
+  push --> test
   test --> deploy
   pr -.-> preview
-  push -.-> deploy
 ```
 
 | Workflow | File | When it runs |
@@ -123,7 +122,18 @@ flowchart LR
 | **Pulumi Setup** | [`.github/workflows/pulumi.yml`](.github/workflows/pulumi.yml) | Reusable: `preview` on PRs, `up` on `main`, or `preview --expect-no-changes` for drift |
 | **Drift detection** | [`.github/workflows/drift.yml`](.github/workflows/drift.yml) | Weekly (Mondays 06:17 UTC) or `workflow_dispatch` |
 
-On `main`, the `deploy` job runs `pulumi up` against stack `diazdesandi/dev` after `test` passes. CI authenticates to Pulumi Cloud via OIDC; the GitHub provider uses the `PULUMI_GITHUB_TOKEN` repository secret (Actions' default `GITHUB_TOKEN` cannot manage org teams, labels, or cross-repo resources). Only one of `preview` or `deploy` runs per workflow invocation — PRs preview, pushes to `main` deploy.
+| Trigger | Jobs |
+| --- | --- |
+| **PR opened / updated** | test → preview |
+| **PR merged → push to `main`** | deploy only (merge commit detected; tests already ran on the PR) |
+| **Direct push to `main`** | test → deploy |
+| **`workflow_dispatch`** | test (manual) |
+
+On push to `main`, merge commits are detected by message (`Merge pull request …` or squash `… (#123)`). Those skip **test** and run **deploy** only. A direct push (no merge markers) runs **test** then **deploy**.
+
+To skip CI on a PR commit, add `[skip ci]` to the commit message. Required status checks will not run for that commit.
+
+On `main`, **deploy** runs `pulumi up` against stack `diazdesandi/dev`. CI authenticates to Pulumi Cloud via OIDC; the GitHub provider uses the `PULUMI_GITHUB_TOKEN` repository secret (Actions' default `GITHUB_TOKEN` cannot manage org teams, labels, or cross-repo resources).
 
 ### Secrets
 
@@ -183,7 +193,7 @@ Set `autoInit: true` when Pulumi should create an empty GitHub repo (GitHub seed
 
 **Add a team** — add it under `teams:` in `config/teams.yaml`, then reference its `slug` in `repoAccess` and/or `config/members.yaml`.
 
-**Add a member** — append an entry to `config/members.yaml` with their `username` and team `slug`/`role` pairs.
+**Add a member** — append an entry to `config/members.yaml` with their `username` and team `slug`s. Omit `role` for the default (`member`); set `role: maintainer` only when they should manage that team's roster.
 
 **Add a ruleset** — append to `config/rulesets.yaml`. A branch pattern may be owned by only one ruleset (validation enforces this).
 

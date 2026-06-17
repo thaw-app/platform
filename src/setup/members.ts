@@ -1,5 +1,5 @@
 import type {
-	MembersFile,
+	MembersFileInput,
 	TeamConfig,
 	TeamMemberConfig,
 	TeamsConfig,
@@ -9,7 +9,7 @@ import type {
 /** Fold members.yaml into the team-centric shape the resource layer expects. */
 export function mergeTeamMemberships(
 	teamsFile: TeamsFile,
-	membersFile: MembersFile,
+	membersFile: MembersFileInput,
 ): TeamsConfig {
 	const membersByTeam = new Map<string, TeamMemberConfig[]>(
 		teamsFile.teams.map((team) => [team.slug, []]),
@@ -19,7 +19,7 @@ export function mergeTeamMemberships(
 		for (const { slug, role } of teams) {
 			const bucket = membersByTeam.get(slug);
 			if (!bucket) continue; // cross-ref validation reports unknown slugs
-			bucket.push({ username, role });
+			bucket.push({ username, role: role ?? "member" });
 		}
 	}
 

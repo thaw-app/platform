@@ -19,10 +19,11 @@
 								},
 								"role": {
 									"enum": ["member", "maintainer"],
-									"type": "string"
+									"type": "string",
+									"default": "member"
 								}
 							},
-							"required": ["slug", "role"],
+							"required": ["slug"],
 							"additionalProperties": false
 						}
 					}

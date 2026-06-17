@@ -26,6 +26,16 @@ env:
 
 jobs:
   test:
+    if: |
+      github.event_name == 'pull_request' ||
+      github.event_name == 'merge_group' ||
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event_name == 'push' &&
+        github.ref == 'refs/heads/main' &&
+        !startsWith(github.event.head_commit.message, 'Merge pull request') &&
+        !contains(github.event.head_commit.message, '(#')
+      )
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v6
@@ -67,8 +77,13 @@ jobs:
       comment-on-pr: true
 
   deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: test
+    if: |
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      always() &&
+      !cancelled() &&
+      (needs.test.result == 'success' || needs.test.result == 'skipped')
     permissions:
       id-token: write
       pull-requests: write

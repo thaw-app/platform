@@ -139,7 +139,7 @@ describe("duplicate detection", () => {
 	it("rejects duplicate usernames in members.yaml", () => {
 		const r = v.safeParse(MembersFileSchema, {
 			members: [
-				{ username: "alice", teams: [{ slug: "eng", role: "member" }] },
+				{ username: "alice", teams: [{ slug: "eng" }] },
 				{ username: "alice", teams: [{ slug: "eng", role: "maintainer" }] },
 			],
 		});
@@ -148,6 +148,16 @@ describe("duplicate detection", () => {
 			expect(
 				r.issues.some((i) => /duplicate username "alice"/.test(i.message)),
 			).toBe(true);
+		}
+	});
+
+	it("defaults omitted team role to member", () => {
+		const r = v.safeParse(MembersFileSchema, {
+			members: [{ username: "alice", teams: [{ slug: "eng" }] }],
+		});
+		expect(r.success).toBe(true);
+		if (r.success) {
+			expect(r.output.members[0]?.teams[0]?.role).toBe("member");
 		}
 	});
 
