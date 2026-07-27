@@ -179,6 +179,20 @@ const RulesetConditionsSchema = v.strictObject({
 	),
 });
 
+export const RulesetBypassActorSchema = v.strictObject({
+	actorType: v.picklist([
+		"RepositoryRole",
+		"Team",
+		"Integration",
+		"OrganizationAdmin",
+		"DeployKey",
+	]),
+	actorId: v.optional(v.number()),
+	bypassMode: v.picklist(["always", "pullRequest", "exempt"]),
+});
+
+export type RulesetBypassActor = v.InferOutput<typeof RulesetBypassActorSchema>;
+
 export const RulesetConfigSchema = v.strictObject({
 	id: v.string(),
 	name: v.optional(v.string()),
@@ -189,6 +203,7 @@ export const RulesetConfigSchema = v.strictObject({
 	),
 	conditions: RulesetConditionsSchema,
 	rules: RulesetRulesSchema,
+	bypassActors: v.optional(v.array(RulesetBypassActorSchema)),
 });
 
 const RulesetsArraySchema = v.array(RulesetConfigSchema);

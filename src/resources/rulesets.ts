@@ -141,6 +141,7 @@ export function createRulesets(
 						excludes: conditions.repositoryName?.excludes ?? [],
 					},
 				},
+				bypassActors: r.bypassActors,
 				rules: toOrganizationRulesetRules(rules, r),
 			});
 		});
@@ -173,6 +174,7 @@ export function createRepositoryRulesets(
 						excludes: refExcludes,
 					},
 				},
+				bypassActors: r.bypassActors,
 				rules: toRepositoryRulesetRules(r.rules, r),
 			},
 			pulumi.mergeOptions(

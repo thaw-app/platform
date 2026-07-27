@@ -249,6 +249,34 @@
 							"requiredDeployments"
 						],
 						"additionalProperties": false
+					},
+					"bypassActors": {
+						"type": "array",
+						"description": "Actors allowed to bypass this ruleset (e.g. org/repo admins).",
+						"items": {
+							"type": "object",
+							"properties": {
+								"actorType": {
+									"type": "string",
+									"enum": [
+										"RepositoryRole",
+										"Team",
+										"Integration",
+										"OrganizationAdmin",
+										"DeployKey"
+									]
+								},
+								"actorId": {
+									"type": "number"
+								},
+								"bypassMode": {
+									"type": "string",
+									"enum": ["always", "pullRequest", "exempt"]
+								}
+							},
+							"required": ["actorType", "bypassMode"],
+							"additionalProperties": false
+						}
 					}
 				},
 				"required": ["id", "target", "conditions", "rules"],

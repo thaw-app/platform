@@ -32,7 +32,7 @@ function toBranchProtectionEntry(
 	};
 
 	return {
-		enforceAdmins: config.enforceAdmins ?? true,
+		enforceAdmins: config.enforceAdmins ?? false,
 		allowsDeletions: config.allowsDeletions,
 		allowsForcePushes: config.allowsForcePushes,
 		requireSignedCommits: config.requireSignedCommits,
