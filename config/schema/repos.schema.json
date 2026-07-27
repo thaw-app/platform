@@ -159,6 +159,10 @@
 							"required": ["name"],
 							"additionalProperties": false
 						}
+					},
+					"bare": {
+						"type": "boolean",
+						"description": "Adopt as a plain repo: no org labels, rulesets, CODEOWNERS, or implied team access."
 					}
 				},
 				"required": ["name", "description"],

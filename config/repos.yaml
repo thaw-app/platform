@@ -40,15 +40,12 @@ repos:
   - name: brand-assets
     description: Shared Thaw brand assets — headers, icons, packaging art, marketing.
     visibility: public
-    topics:
-      - thaw
-      - branding
-      - assets
-    mergeStrategies:
-      - squash
-    deleteBranchOnMerge: true
-    autoInit: false
     adopt: true
+    bare: true
+    hasIssues: false
+    hasWiki: false
+    hasProjects: false
+    hasDiscussions: false
 
   - name: menubarspawner
     description: Small macOS menu-bar helper that spawns customizable status items.

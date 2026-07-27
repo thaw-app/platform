@@ -106,16 +106,19 @@ export function buildRepoConfig(
 		hasWiki: repo.hasWiki ?? features.wiki,
 		hasProjects: repo.hasProjects ?? features.projects,
 		hasDiscussions: repo.hasDiscussions ?? features.discussions,
-		labels: { ...labels, ...repo.labels },
+		labels: repo.bare
+			? { ...(repo.labels ?? {}) }
+			: { ...labels, ...repo.labels },
 		teams: teamAccess,
-		resolvedRepoRulesets: provisionRepoRulesets
-			? rulesetsForRepo(repo.name, rulesets)
-			: [],
+		resolvedRepoRulesets:
+			repo.bare || !provisionRepoRulesets
+				? []
+				: rulesetsForRepo(repo.name, rulesets),
 		resolvedBranchProtection,
 		squashMergeCommitTitle: defaults.squashMergeCommitTitle,
 		squashMergeCommitMessage: defaults.squashMergeCommitMessage,
 		defaultBranch: defaults.defaultBranch,
-		codeownersContent: ctx.codeownersContent,
+		codeownersContent: repo.bare ? "" : ctx.codeownersContent,
 		pulumiName: repo.pulumiName ?? repo.name,
 		organization,
 	};

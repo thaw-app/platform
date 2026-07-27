@@ -19,6 +19,11 @@ rulesets:
       refName:
         includes:
           - "~DEFAULT_BRANCH"
+      repositoryName:
+        includes:
+          - "~ALL"
+        excludes:
+          - brand-assets
     rules:
       creation: true
       update: false

@@ -64,6 +64,7 @@ export const RepoConfigSchema = v.pipe(
 		adopt: v.optional(v.boolean()),
 		pulumiName: v.optional(v.string()),
 		archived: v.optional(v.boolean()),
+		bare: v.optional(v.boolean()),
 		hasIssues: v.optional(v.boolean()),
 		hasWiki: v.optional(v.boolean()),
 		hasProjects: v.optional(v.boolean()),
