@@ -36,6 +36,20 @@ repos:
     deleteBranchOnMerge: true
     autoInit: true
 
+
+  - name: brand-assets
+    description: Shared Thaw brand assets — headers, icons, packaging art, marketing.
+    visibility: public
+    topics:
+      - thaw
+      - branding
+      - assets
+    mergeStrategies:
+      - squash
+    deleteBranchOnMerge: true
+    autoInit: false
+    adopt: true
+
   - name: menubarspawner
     description: Small macOS menu-bar helper that spawns customizable status items.
     visibility: public
