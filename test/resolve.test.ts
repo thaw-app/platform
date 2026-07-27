@@ -132,6 +132,42 @@ describe("buildRepoConfig", () => {
 		);
 		expect(Object.keys(built.labels ?? {})).toEqual(["global", "local"]);
 	});
+
+	it("bare repos skip org labels, rulesets, and CODEOWNERS", () => {
+		const built = buildRepoConfig(repo({ name: "brand-assets", bare: true }), {
+			...baseCtx,
+			labels: { global: { color: "000000" } },
+			provisionRepoRulesets: true,
+			rulesets: [
+				{
+					id: "main-default",
+					target: "branch",
+					enforcement: "active",
+					conditions: { refName: { includes: ["~DEFAULT_BRANCH"] } },
+					rules: {
+						creation: false,
+						update: false,
+						deletion: false,
+						nonFastForward: false,
+						requiredLinearHistory: false,
+						requiredSignatures: false,
+						copilotCodeReview: {
+							reviewDraftPullRequests: false,
+							reviewOnPush: false,
+						},
+						pullRequest: {},
+						requiredStatusChecks: { enabled: false },
+						requiredCodeScanning: { enabled: false },
+						mergeQueue: { enabled: false },
+						requiredDeployments: { enabled: false },
+					},
+				},
+			],
+		});
+		expect(built.labels).toEqual({});
+		expect(built.resolvedRepoRulesets).toEqual([]);
+		expect(built.codeownersContent).toBe("");
+	});
 });
 
 describe("resolveTeamAccess", () => {
