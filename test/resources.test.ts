@@ -332,6 +332,28 @@ describe("createRepositoryRulesets", () => {
 	});
 });
 
+it("passes bypassActors through to repository rulesets", async () => {
+	const repo = new github.Repository("r", { name: "r" });
+	await settle();
+	createRepositoryRulesets("website", repo, [
+		mainRuleset({
+			id: "with-bypass",
+			bypassActors: [
+				{ actorType: "OrganizationAdmin", actorId: 1, bypassMode: "always" },
+				{ actorType: "RepositoryRole", actorId: 5, bypassMode: "always" },
+			],
+		}),
+	]);
+	await settle();
+	const rs = first(
+		findByType("github:index/repositoryRuleset:RepositoryRuleset"),
+	);
+	expect(rs.inputs.bypassActors).toEqual([
+		{ actorType: "OrganizationAdmin", actorId: 1, bypassMode: "always" },
+		{ actorType: "RepositoryRole", actorId: 5, bypassMode: "always" },
+	]);
+});
+
 describe("createRulesets", () => {
 	it("drops disabled rulesets", async () => {
 		const result = createRulesets([

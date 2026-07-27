@@ -15,6 +15,14 @@ rulesets:
     name: Default branch protection
     target: branch
     enforcement: active
+    # Org owners + repo admins can skip required checks/reviews when needed.
+    bypassActors:
+      - actorType: OrganizationAdmin
+        actorId: 1
+        bypassMode: always
+      - actorType: RepositoryRole
+        actorId: 5 # repository admin
+        bypassMode: always
     conditions:
       refName:
         includes:
