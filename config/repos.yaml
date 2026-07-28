@@ -8,7 +8,7 @@
 # for repo-specific overrides (e.g. pin a CI check name).
 repos:
   - name: website
-    description: Thaw project website and Sparkle appcast (GitHub Pages).
+    description: Thaw project website (GitHub Pages).
     visibility: public
     homepage: https://thaw-app.github.io/website/
     topics:
@@ -23,6 +23,28 @@ repos:
     deleteBranchOnMerge: true
     autoInit: true
 
+  - name: updates
+    description: >-
+      Sparkle appcast and signed update metadata for Thaw (GitHub Pages).
+      Stable public feed for in-app updates; written by release automation only.
+    visibility: public
+    homepage: https://thaw-app.github.io/updates/
+    topics:
+      - thaw
+      - macos
+      - sparkle
+      - appcast
+      - github-pages
+      - updates
+    mergeStrategies:
+      - squash
+    deleteBranchOnMerge: true
+    autoInit: true
+    hasIssues: false
+    hasWiki: false
+    hasProjects: false
+    hasDiscussions: false
+
   - name: homebrew-tap
     description: Homebrew tap formulas for Thaw releases.
     visibility: public
@@ -35,7 +57,6 @@ repos:
       - squash
     deleteBranchOnMerge: true
     autoInit: true
-
 
   - name: brand-assets
     description: Shared Thaw brand assets — headers, icons, packaging art, marketing.

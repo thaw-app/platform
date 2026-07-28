@@ -17,6 +17,11 @@ repoAccess:
     - team: contributors
       permission: push
 
+  # Maintainers only — feed must stay CI/admin-writable, not day-to-day push.
+  updates:
+    - team: maintainers
+      permission: admin
+
   homebrew-tap:
     - team: maintainers
       permission: admin
