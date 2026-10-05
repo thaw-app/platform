@@ -14,3 +14,9 @@ members:
     teams:
       - slug: contributors
       - slug: maintainers
+  - username: alvst
+    teams:
+      - slug: contributors
+  - username: camguillory
+    teams:
+      - slug: contributors
