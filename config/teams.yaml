@@ -40,6 +40,12 @@ repoAccess:
     - team: contributors
       permission: push
 
+  PlatformRuntimeKit:
+    - team: maintainers
+      permission: admin
+    - team: contributors
+      permission: push
+
   ".github":
     - team: maintainers
       permission: admin
@@ -47,3 +53,5 @@ repoAccess:
   org-ci:
     - team: maintainers
       permission: admin
+    - team: contributors
+      permission: push

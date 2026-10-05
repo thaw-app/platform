@@ -32,6 +32,7 @@ rulesets:
           - "~ALL"
         excludes:
           - brand-assets
+          - PlatformRuntimeKit
     rules:
       creation: true
       update: false

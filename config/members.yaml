@@ -14,3 +14,12 @@ members:
     teams:
       - slug: contributors
       - slug: maintainers
+  - username: 7a6163
+    teams:
+      - slug: contributors
+  - username: alvst
+    teams:
+      - slug: contributors
+  - username: camguillory
+    teams:
+      - slug: contributors

@@ -95,6 +95,16 @@ repos:
     autoInit: false
     adopt: true
 
+  # Private, proprietary source: bare, so no org labels or CODEOWNERS. Rulesets
+  # are unavailable for private repos on GitHub Free, so it is also excluded in
+  # config/rulesets.yaml.
+  - name: PlatformRuntimeKit
+    description: Proprietary Swift package providing current-platform menu bar runtime support for Thaw.
+    visibility: private
+    adopt: true
+    bare: true
+    autoInit: false
+
   - name: .github
     pulumiName: dot-github
     description: Shared organization workflows, issue templates, and defaults.
