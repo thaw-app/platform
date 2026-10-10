@@ -8,15 +8,14 @@
 # for repo-specific overrides (e.g. pin a CI check name).
 repos:
   - name: website
-    description: Thaw project website (GitHub Pages).
+    description: The website for Thaw and Floe, at getthaw.app.
     visibility: public
-    homepage: https://thaw-app.github.io/website/
+    homepage: https://www.getthaw.app
     topics:
       - thaw
       - macos
       - menu-bar
       - website
-      - github-pages
       - documentation
     mergeStrategies:
       - squash
