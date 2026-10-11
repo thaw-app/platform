@@ -1,11 +1,12 @@
 # yaml-language-server: $schema=./schema/repos.schema.json
 #
 # Pulumi-managed repositories for thaw-app.
-# Out of scope (manual admin, not listed here): Thaw, AXSwift
+# Out of scope (manual admin, not listed here): Thaw, Floe, prk-bin, shieldcn,
+# AXSwift6, and platform itself.
 #
-# Branch enforcement is defined in config/rulesets.yaml and applied per-repo
-# when enableRulesets is false (GitHub Free). Use branchProtection here only
-# for repo-specific overrides (e.g. pin a CI check name).
+# Branch enforcement is defined in config/rulesets.yaml, which lists the repos
+# each ruleset is on. A repo on a ruleset that requires status checks names its
+# own CI checks here (requiredStatusChecks).
 repos:
   - name: website
     description: Thaw project website (GitHub Pages).
@@ -59,7 +60,7 @@ repos:
     autoInit: true
 
   - name: brand-assets
-    description: Shared Thaw brand assets — headers, icons, packaging art, marketing.
+    description: "Shared Thaw brand assets: headers, icons, packaging art, marketing."
     visibility: public
     adopt: true
     bare: true
@@ -85,6 +86,7 @@ repos:
   - name: raycast-extension
     description: Control Thaw directly from Raycast. Toggle visibility sections, search menu bar items, and open settings without touching your mouse.
     visibility: public
+    homepage: https://www.raycast.com/diazdesandi/thaw
     topics:
       - thaw
       - macos
@@ -94,10 +96,12 @@ repos:
     deleteBranchOnMerge: true
     autoInit: false
     adopt: true
+    requiredStatusChecks:
+      - ci
 
   # Private, proprietary source: bare, so no org labels or CODEOWNERS. Rulesets
-  # are unavailable for private repos on GitHub Free, so it is also excluded in
-  # config/rulesets.yaml.
+  # are unavailable for private repos on GitHub Free, so no ruleset in
+  # config/rulesets.yaml lists it.
   - name: PlatformRuntimeKit
     description: Proprietary Swift package providing current-platform menu bar runtime support for Thaw.
     visibility: private
@@ -130,3 +134,7 @@ repos:
       - squash
     deleteBranchOnMerge: true
     autoInit: true
+    # test-actions.yml runs on every pull request; actionlint only when a
+    # workflow or action file changes, so it cannot be required.
+    requiredStatusChecks:
+      - test

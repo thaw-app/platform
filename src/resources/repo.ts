@@ -19,10 +19,13 @@ type ActiveRepoContext = {
 	resolvedBranchProtection: ResolvedRepoConfig["resolvedBranchProtection"];
 	environments: ResolvedRepoConfig["environments"];
 	labels: ResolvedRepoConfig["labels"];
+	security: ResolvedRepoConfig["security"];
 	defaultBranch: string;
 	codeownersContent: string;
 	teamResources: TeamResourceMap;
 };
+
+const status = (on: boolean) => (on ? "enabled" : "disabled");
 
 function provisionTeamAccess(
 	parent: OrgRepository,
@@ -98,6 +101,23 @@ function provisionBranchProtection(
 	}
 }
 
+// Security updates need alerts, so the alerts setting is applied first.
+function provisionDependabot(parent: OrgRepository, ctx: ActiveRepoContext) {
+	const alerts = new github.RepositoryVulnerabilityAlerts(
+		`${ctx.resourcePrefix}-dependabot-alerts`,
+		{ repository: ctx.repo.name, enabled: ctx.security.dependabotAlerts },
+		{ parent, dependsOn: [ctx.repo] },
+	);
+	new github.RepositoryDependabotSecurityUpdates(
+		`${ctx.resourcePrefix}-dependabot-security-updates`,
+		{
+			repository: ctx.repo.name,
+			enabled: ctx.security.dependabotSecurityUpdates,
+		},
+		{ parent, dependsOn: [alerts] },
+	);
+}
+
 function provisionActiveRepoResources(
 	parent: OrgRepository,
 	ctx: ActiveRepoContext,
@@ -105,6 +125,8 @@ function provisionActiveRepoResources(
 	provisionTeamAccess(parent, ctx);
 	provisionRepositoryRulesets(parent, ctx);
 	provisionBranchProtection(parent, ctx);
+
+	provisionDependabot(parent, ctx);
 
 	createEnvironments(
 		{
@@ -161,6 +183,7 @@ export default class OrgRepository extends ComponentResource {
 			hasWiki,
 			hasProjects,
 			hasDiscussions,
+			security,
 			autoInit,
 			archived,
 			teams,
@@ -198,6 +221,15 @@ export default class OrgRepository extends ComponentResource {
 					squashMergeCommitTitle,
 					squashMergeCommitMessage,
 				}),
+				// GitHub Free offers secret scanning on public repos only.
+				...(visibility === "public" && {
+					securityAndAnalysis: {
+						secretScanning: { status: status(security.secretScanning) },
+						secretScanningPushProtection: {
+							status: status(security.pushProtection),
+						},
+					},
+				}),
 			},
 			{
 				parent: this,
@@ -214,6 +246,7 @@ export default class OrgRepository extends ComponentResource {
 				resolvedBranchProtection,
 				environments,
 				labels,
+				security,
 				defaultBranch,
 				codeownersContent,
 				teamResources,

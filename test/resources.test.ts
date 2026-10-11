@@ -40,6 +40,12 @@ const settle = () => new Promise((r) => setTimeout(r, 0));
 
 const findByType = (t: string) => registered.filter((r) => r.type === t);
 
+const VULNERABILITY_ALERTS =
+	"github:index/repositoryVulnerabilityAlerts:RepositoryVulnerabilityAlerts";
+
+const SECURITY_UPDATES =
+	"github:index/repositoryDependabotSecurityUpdates:RepositoryDependabotSecurityUpdates";
+
 const first = <T>(items: T[]): T => {
 	const item = items[0];
 	if (!item) throw new Error("expected at least one item");
@@ -60,6 +66,12 @@ const resolvedRepo = (
 	hasWiki: false,
 	hasProjects: false,
 	hasDiscussions: false,
+	security: {
+		dependabotAlerts: true,
+		dependabotSecurityUpdates: false,
+		secretScanning: true,
+		pushProtection: true,
+	},
 	teams: [],
 	resolvedRepoRulesets: [],
 	resolvedBranchProtection: {},
@@ -175,6 +187,34 @@ describe("OrgRepository", () => {
 			findByType("github:index/repositoryEnvironment:RepositoryEnvironment"),
 		).toHaveLength(0);
 		expect(findByType("github:index/issueLabel:IssueLabel")).toHaveLength(0);
+		expect(findByType(VULNERABILITY_ALERTS)).toHaveLength(0);
+	});
+
+	it("sets Dependabot alerts and security updates from the resolved config", async () => {
+		provisionOrgRepository("r", resolvedRepo());
+		await settle();
+
+		const alerts = first(findByType(VULNERABILITY_ALERTS));
+		expect(alerts.name).toBe("r-dependabot-alerts");
+		expect(alerts.inputs.enabled).toBe(true);
+		const updates = first(findByType(SECURITY_UPDATES));
+		expect(updates.name).toBe("r-dependabot-security-updates");
+		expect(updates.inputs.enabled).toBe(false);
+	});
+
+	it("sets secret scanning on public repos and leaves private ones alone", async () => {
+		provisionOrgRepository("pub", resolvedRepo());
+		provisionOrgRepository("priv", resolvedRepo({ visibility: "private" }));
+		await settle();
+
+		const repos = findByType("github:index/repository:Repository");
+		const analysis = (name: string) =>
+			repos.find((r) => r.name === name)?.inputs.securityAndAnalysis;
+		expect(analysis("pub")).toEqual({
+			secretScanning: { status: "enabled" },
+			secretScanningPushProtection: { status: "enabled" },
+		});
+		expect(analysis("priv")).toBeUndefined();
 	});
 
 	it("creates repository rulesets when resolvedRepoRulesets is set", async () => {
@@ -332,6 +372,31 @@ describe("createRepositoryRulesets", () => {
 	});
 });
 
+it("asks for no pull request when the ruleset has no pull request rule", async () => {
+	const repo = new github.Repository("r", { name: "r" });
+	await settle();
+	const {
+		pullRequest: _pr,
+		copilotCodeReview: _review,
+		...rules
+	} = defaultRules();
+	createRepositoryRulesets("brand-assets", repo, [
+		mainRuleset({
+			id: "main-basic",
+			rules: { ...rules, deletion: true, nonFastForward: true },
+		}),
+	]);
+	await settle();
+	const rs = first(
+		findByType("github:index/repositoryRuleset:RepositoryRuleset"),
+	);
+	const sent = rs.inputs.rules as Record<string, unknown>;
+	expect(sent.pullRequest).toBeUndefined();
+	expect(sent.copilotCodeReview).toBeUndefined();
+	expect(sent.requiredStatusChecks).toBeUndefined();
+	expect(sent.nonFastForward).toBe(true);
+});
+
 it("passes bypassActors through to repository rulesets", async () => {
 	const repo = new github.Repository("r", { name: "r" });
 	await settle();
@@ -340,7 +405,7 @@ it("passes bypassActors through to repository rulesets", async () => {
 			id: "with-bypass",
 			bypassActors: [
 				{ actorType: "OrganizationAdmin", actorId: 1, bypassMode: "always" },
-				{ actorType: "RepositoryRole", actorId: 5, bypassMode: "always" },
+				{ actorType: "RepositoryRole", actorId: 5, bypassMode: "pull_request" },
 			],
 		}),
 	]);
@@ -350,7 +415,7 @@ it("passes bypassActors through to repository rulesets", async () => {
 	);
 	expect(rs.inputs.bypassActors).toEqual([
 		{ actorType: "OrganizationAdmin", actorId: 1, bypassMode: "always" },
-		{ actorType: "RepositoryRole", actorId: 5, bypassMode: "always" },
+		{ actorType: "RepositoryRole", actorId: 5, bypassMode: "pull_request" },
 	]);
 });
 

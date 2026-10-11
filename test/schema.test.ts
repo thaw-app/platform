@@ -44,7 +44,7 @@ describe("LabelDefinitionSchema", () => {
 });
 
 describe("OrgConfigSchema", () => {
-	it("applies squash-merge defaults when omitted", () => {
+	it("applies squash-merge and security defaults when omitted", () => {
 		const r = v.safeParse(OrgConfigSchema, {
 			owner: "acme",
 			organization: "acme-org",
@@ -67,6 +67,12 @@ describe("OrgConfigSchema", () => {
 			expect(r.output.defaults.squashMergeCommitMessage).toBe(
 				"COMMIT_MESSAGES",
 			);
+			expect(r.output.defaults.security).toEqual({
+				dependabotAlerts: true,
+				dependabotSecurityUpdates: false,
+				secretScanning: true,
+				pushProtection: true,
+			});
 		}
 	});
 });

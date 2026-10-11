@@ -42,7 +42,7 @@ function reportIssues(issues: ValidationIssue[]) {
 	const errors = issues.filter((i) => i.severity === "error");
 	const warnings = issues.filter((i) => i.severity === "warning");
 	for (const w of warnings) {
-		console.warn(`config warning — ${w.path}: ${w.message}`);
+		console.warn(`config warning at ${w.path}: ${w.message}`);
 	}
 	if (errors.length > 0) {
 		const body = errors.map((i) => `- ${i.path}: ${i.message}`).join("\n");

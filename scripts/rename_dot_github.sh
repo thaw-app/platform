@@ -8,7 +8,7 @@ old_name="dot-github"
 new_name=".github"
 
 if gh repo view "${org}/${new_name}" >/dev/null 2>&1; then
-	echo "${org}/${new_name} already exists — nothing to do."
+	echo "${org}/${new_name} already exists, so there is nothing to do."
 	exit 0
 fi
 

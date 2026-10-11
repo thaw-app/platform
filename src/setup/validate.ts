@@ -44,9 +44,9 @@ function repoCondition(r: RulesetConfig): RepoCondition {
 }
 
 // Conservative overlap test: ~ALL overlaps everything; otherwise the
-// include lists must intersect. Excludes are ignored (may report a
-// theoretical overlap that excludes actually prevent — acceptable:
-// false positive here is a warning to a human, not a failure).
+// include lists must intersect. Excludes are ignored, so two rulesets kept
+// apart only by excludes are reported as overlapping and fail validation.
+// Keep rulesets apart with include lists.
 function repoSetsOverlap(a: RepoCondition, b: RepoCondition): boolean {
 	if (a.includes.includes("~ALL") || b.includes.includes("~ALL")) return true;
 	return a.includes.some((name) => b.includes.includes(name));
@@ -141,6 +141,49 @@ function validateRulesetPatterns(config: InfraConfig): ValidationIssue[] {
 	});
 }
 
+// A ruleset lists its repos by name, so a misspelt or removed name would
+// leave that repo with no rules and no error. ~ALL and glob patterns are not
+// names and are not checked.
+function validateRulesetRepoRefs(config: InfraConfig): ValidationIssue[] {
+	const repoNames = new Set(config.repos.map((r) => r.name));
+	const isName = (entry: string) =>
+		!entry.startsWith("~") && !entry.includes("*");
+
+	return config.rulesets.flatMap((r) => {
+		const { includes, excludes } = repoCondition(r);
+		return uniq([...includes, ...excludes])
+			.filter((name) => isName(name) && !repoNames.has(name))
+			.map((name) =>
+				issue(
+					`rulesets.${r.id}.conditions.repositoryName`,
+					`unknown repo "${name}"`,
+				),
+			);
+	});
+}
+
+// A repo's check names only take effect through a ruleset that requires
+// status checks. If no such ruleset is on the repo, nothing requires them.
+function validateRepoStatusChecks(config: InfraConfig): ValidationIssue[] {
+	const requiringChecks = config.rulesets.filter(
+		(r) => r.enforcement !== "disabled" && r.rules.requiredStatusChecks.enabled,
+	);
+
+	return config.repos
+		.filter(
+			(repo) =>
+				repo.requiredStatusChecks?.length &&
+				!requiringChecks.some((r) => rulesetAppliesToRepo(r, repo.name)),
+		)
+		.map((repo) =>
+			issue(
+				`repos.${repo.name}.requiredStatusChecks`,
+				"no ruleset on this repo requires status checks, so these are not enforced",
+				"warning",
+			),
+		);
+}
+
 function validateRulesetBranchProtectionOverlap(
 	config: InfraConfig,
 ): ValidationIssue[] {
@@ -165,7 +208,7 @@ function validateRulesetBranchProtectionOverlap(
 			}
 
 			return Object.entries(repo.branchProtection).flatMap(([pattern, bp]) => {
-				// Exact match after normalization only — glob-pattern overlap
+				// Exact match after normalization only. Glob-pattern overlap
 				// (e.g. BP release/* vs ruleset release/v*) is out of scope.
 				const normalizedBp = normalizeBranchPattern(pattern, defaultBranch);
 				if (!rulesetPatterns.has(normalizedBp)) return [];
@@ -189,6 +232,23 @@ function validateRulesetBranchProtectionOverlap(
 				];
 			});
 		});
+	});
+}
+
+// GitHub rejects these pairs: each feature builds on the one it needs.
+function validateSecurity(config: InfraConfig): ValidationIssue[] {
+	const { defaults } = config.org;
+	return config.repos.flatMap((repo) => {
+		const security = { ...defaults.security, ...repo.security };
+		const path = `repos.${repo.name}.security`;
+		return [
+			...(security.dependabotSecurityUpdates && !security.dependabotAlerts
+				? [issue(path, "dependabotSecurityUpdates needs dependabotAlerts")]
+				: []),
+			...(security.pushProtection && !security.secretScanning
+				? [issue(path, "pushProtection needs secretScanning")]
+				: []),
+		];
 	});
 }
 
@@ -217,7 +277,10 @@ export function validateCrossRefs(
 	return [
 		...validateTeamRefs(config),
 		...validateRulesetPatterns(config),
+		...validateRulesetRepoRefs(config),
+		...validateRepoStatusChecks(config),
 		...validateRulesetBranchProtectionOverlap(config),
+		...validateSecurity(config),
 		...validateLabelGroups(labelGroups),
 	];
 }

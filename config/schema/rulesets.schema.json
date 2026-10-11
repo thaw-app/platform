@@ -241,8 +241,6 @@
 							"nonFastForward",
 							"requiredLinearHistory",
 							"requiredSignatures",
-							"copilotCodeReview",
-							"pullRequest",
 							"requiredStatusChecks",
 							"requiredCodeScanning",
 							"mergeQueue",
@@ -252,26 +250,25 @@
 					},
 					"bypassActors": {
 						"type": "array",
-						"description": "Actors allowed to bypass this ruleset (e.g. org/repo admins).",
 						"items": {
 							"type": "object",
 							"properties": {
 								"actorType": {
-									"type": "string",
 									"enum": [
 										"RepositoryRole",
 										"Team",
 										"Integration",
 										"OrganizationAdmin",
 										"DeployKey"
-									]
+									],
+									"type": "string"
 								},
 								"actorId": {
 									"type": "number"
 								},
 								"bypassMode": {
-									"type": "string",
-									"enum": ["always", "pullRequest", "exempt"]
+									"enum": ["always", "pull_request", "exempt"],
+									"type": "string"
 								}
 							},
 							"required": ["actorType", "bypassMode"],

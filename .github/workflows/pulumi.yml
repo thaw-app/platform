@@ -21,10 +21,10 @@ jobs:
     env:
       HUSKY: 0
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Bun
-        uses: oven-sh/setup-bun@v2.2.0
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: 1.3.14
 
@@ -32,7 +32,7 @@ jobs:
         run: bun install --frozen-lockfile --ignore-scripts
 
       - name: Authenticate with Pulumi Cloud
-        uses: pulumi/auth-actions@v2.1.0
+        uses: pulumi/auth-actions@141415910c3beb54e03b48e9057c204c97b956f2 # v2.1.0
         with:
           organization: diazdesandi
           requested-token-type: urn:pulumi:token-type:access_token:personal
@@ -43,21 +43,24 @@ jobs:
           if [ -z "$PULUMI_GITHUB_TOKEN" ]; then
             echo "::error::Repository secret PULUMI_GITHUB_TOKEN is missing or empty."
             echo "::error::Add a classic PAT (admin:org + repo) under Settings → Secrets → Actions."
-            echo "::error::Pulumi Cloud stack github:token is not used in CI — Actions always sets GITHUB_TOKEN unless overridden here."
+            echo "::error::Pulumi Cloud stack github:token is not used in CI: Actions always sets GITHUB_TOKEN unless overridden here."
             exit 1
           fi
         env:
           PULUMI_GITHUB_TOKEN: ${{ secrets.PULUMI_GITHUB_TOKEN }}
 
       - name: Run Pulumi ${{ inputs.command }}
-        uses: pulumi/actions@v7
+        uses: pulumi/actions@8e5e406f4007fca908480587cb9893c07090f58d # v7.0.0
         env:
-          # Override the job's default GITHUB_TOKEN — Actions' integration token
+          # Override the job's default GITHUB_TOKEN: Actions' integration token
           # cannot manage org teams, labels, or cross-repo resources.
           GITHUB_TOKEN: ${{ secrets.PULUMI_GITHUB_TOKEN }}
         with:
           command: ${{ inputs.command }}
           stack-name: diazdesandi/dev
+          # Read GitHub's current settings first, so a change made by hand
+          # shows up in the plan and config wins on apply.
+          refresh: true
           comment-on-pr: ${{ inputs.comment-on-pr }}
           expect-no-changes: ${{ inputs.expect-no-changes }}
           github-token: ${{ secrets.GITHUB_TOKEN }}

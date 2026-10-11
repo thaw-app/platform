@@ -34,6 +34,28 @@ export function rulesetsForRepo(
 	);
 }
 
+// The ruleset as it applies to one repo. When the ruleset requires status
+// checks and the repo names its own, those replace the ruleset's.
+export function withRepoStatusChecks(
+	ruleset: RulesetConfig,
+	contexts: string[] | undefined,
+): RulesetConfig {
+	const checks = ruleset.rules.requiredStatusChecks;
+	if (!checks.enabled || !contexts?.length) return ruleset;
+
+	const { acceptAnyOf: _replaced, ...rest } = checks;
+	return {
+		...ruleset,
+		rules: {
+			...ruleset.rules,
+			requiredStatusChecks: {
+				...rest,
+				requiredChecks: contexts.map((context) => ({ context })),
+			},
+		},
+	};
+}
+
 export function mergeRepoBranchProtection(
 	repo: RepoConfig,
 	defaultBranch: string,

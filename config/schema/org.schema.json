@@ -55,6 +55,36 @@
 					},
 					"required": ["issues", "wiki", "projects", "discussions"],
 					"additionalProperties": false
+				},
+				"security": {
+					"type": "object",
+					"properties": {
+						"dependabotAlerts": {
+							"type": "boolean"
+						},
+						"dependabotSecurityUpdates": {
+							"type": "boolean"
+						},
+						"secretScanning": {
+							"type": "boolean"
+						},
+						"pushProtection": {
+							"type": "boolean"
+						}
+					},
+					"required": [
+						"dependabotAlerts",
+						"dependabotSecurityUpdates",
+						"secretScanning",
+						"pushProtection"
+					],
+					"additionalProperties": false,
+					"default": {
+						"dependabotAlerts": true,
+						"dependabotSecurityUpdates": false,
+						"secretScanning": true,
+						"pushProtection": true
+					}
 				}
 			},
 			"required": [

@@ -23,7 +23,18 @@ export const SquashMergeCommitMessageSchema = v.picklist([
 	"BLANK",
 ]);
 
-// Branch protection mirrors BranchProtectionArgs from Pulumi — no custom schema needed.
+// Security features GitHub offers per repository. Org defaults give all four;
+// a repo overrides the ones it needs to.
+export const SecuritySchema = v.strictObject({
+	dependabotAlerts: v.boolean(),
+	dependabotSecurityUpdates: v.boolean(),
+	secretScanning: v.boolean(),
+	pushProtection: v.boolean(),
+});
+
+export type SecurityConfig = v.InferOutput<typeof SecuritySchema>;
+
+// Branch protection mirrors BranchProtectionArgs from Pulumi, so it needs no custom schema.
 // We only validate the fields users can set in YAML; Pulumi owns the rest.
 const BranchProtectionSchema = v.strictObject({
 	requiredReviewCount: v.optional(v.number()),
@@ -45,7 +56,7 @@ export type BranchProtectionConfig = v.InferOutput<
 	typeof BranchProtectionSchema
 >;
 
-// What createBranchProtection receives — Pulumi's args minus the repo/pattern identifiers
+// What createBranchProtection receives: Pulumi's args minus the repo/pattern identifiers
 export type BranchProtectionEntry = Omit<
 	BranchProtectionArgs,
 	"repositoryId" | "pattern"
@@ -69,7 +80,11 @@ export const RepoConfigSchema = v.pipe(
 		hasWiki: v.optional(v.boolean()),
 		hasProjects: v.optional(v.boolean()),
 		hasDiscussions: v.optional(v.boolean()),
+		security: v.optional(v.partial(SecuritySchema)),
 		labels: v.optional(LabelSetSchema),
+		// The checks this repo's CI reports. A ruleset on the repo that requires
+		// status checks requires these, since job names differ per repo.
+		requiredStatusChecks: v.optional(v.array(v.string())),
 		branchProtection: v.optional(v.record(v.string(), BranchProtectionSchema)),
 		environments: v.optional(v.array(EnvironmentConfigSchema)),
 	}),
@@ -108,6 +123,7 @@ export interface ResolvedRepoConfig
 		| "hasWiki"
 		| "hasProjects"
 		| "hasDiscussions"
+		| "security"
 	> {
 	visibility: RepoVisibility;
 	mergeStrategies: MergeStrategy[];
@@ -116,6 +132,7 @@ export interface ResolvedRepoConfig
 	hasWiki: boolean;
 	hasProjects: boolean;
 	hasDiscussions: boolean;
+	security: SecurityConfig;
 	teams: TeamAccess[];
 	resolvedRepoRulesets: RulesetConfig[];
 	resolvedBranchProtection: Record<string, BranchProtectionEntry>;

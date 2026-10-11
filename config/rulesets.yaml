@@ -1,50 +1,64 @@
 # yaml-language-server: $schema=./schema/rulesets.schema.json
 #
-# Org-wide default-branch rules for managed repositories (~ALL). All work merges
-# to main; squash-only merges, 2 reviews, CODEOWNERS.
-# Managed-repo workflows should expose one CI job named `ci`, `build`, or `test`
-# (and run on merge_group when merge queue is enabled). GitHub rulesets cannot
-# express "any one of" — acceptAnyOf is validated here; pin a name per-repo via
-# branchProtection when needed.
+# Default-branch rules for managed repositories, in two tiers. Each ruleset
+# names its repos, so every managed repo is in exactly one list or in none.
 #
-# On GitHub Free (enableRulesets: false), org rulesets are not available (404).
-# The same policy is provisioned as a RepositoryRuleset on every managed repo in
-# repos.yaml. Set enableRulesets: true only if the org upgrades to Team+.
+#   repo-main-default  Reviewed: a pull request, one approval, signed commits
+#                      and the repo's own CI check. For repos other projects
+#                      build on, where the OpenSSF Scorecard's branch
+#                      protection and code review checks are worth meeting.
+#   repo-main-basic    Basic: the branch cannot be deleted or force-pushed.
+#                      Merges do not wait on a review or a check.
+#
+# PlatformRuntimeKit is in neither list: it is private, and rulesets are
+# unavailable for private repos on GitHub Free. Thaw and Floe are not managed
+# here at all.
+#
+# A repo names its own CI checks in repos.yaml (requiredStatusChecks), since
+# job names differ per repo. For a repo that names none, GitHub requires the
+# first entry of acceptAnyOf below.
+#
+# On GitHub Free (enableRulesets: false), org rulesets are not available (403).
+# Each ruleset is provisioned as a RepositoryRuleset on the repos it lists. Set
+# enableRulesets: true only if the org upgrades to Team+.
 rulesets:
   - id: repo-main-default
     name: Default branch protection
     target: branch
     enforcement: active
-    # Org owners + repo admins can skip required checks/reviews when needed.
+    # Org owners and repo admins can merge without the review or the check, but
+    # only through a pull request: nobody pushes to the branch directly. That
+    # includes this program's CODEOWNERS sync, which commits to the default
+    # branch, so a change to config/codeowners.yaml reaches these repos by pull
+    # request.
     bypassActors:
       - actorType: OrganizationAdmin
         actorId: 1
-        bypassMode: always
+        bypassMode: pull_request
       - actorType: RepositoryRole
         actorId: 5 # repository admin
-        bypassMode: always
+        bypassMode: pull_request
     conditions:
       refName:
         includes:
           - "~DEFAULT_BRANCH"
       repositoryName:
         includes:
-          - "~ALL"
-        excludes:
-          - brand-assets
-          - PlatformRuntimeKit
+          - org-ci
+          - raycast-extension
     rules:
       creation: true
       update: false
       deletion: true
       nonFastForward: true
       requiredLinearHistory: true
-      requiredSignatures: false
+      # Merges are squashed by GitHub, which signs them.
+      requiredSignatures: true
       copilotCodeReview:
         reviewDraftPullRequests: false
         reviewOnPush: false
       pullRequest:
-        requiredApprovingReviewCount: 2
+        requiredApprovingReviewCount: 1
         dismissStaleReviewsOnPush: true
         requireCodeOwnerReview: true
         requireLastPushApproval: true
@@ -62,5 +76,37 @@ rulesets:
         enabled: false
         mergeMethod: SQUASH
         groupingStrategy: ALLGREEN
+      requiredDeployments:
+        enabled: false
+
+  - id: repo-main-basic
+    name: Default branch basics
+    target: branch
+    enforcement: active
+    conditions:
+      refName:
+        includes:
+          - "~DEFAULT_BRANCH"
+      repositoryName:
+        includes:
+          - website
+          - updates
+          - homebrew-tap
+          - brand-assets
+          - menubarspawner
+          - .github
+    rules:
+      creation: false
+      update: false
+      deletion: true
+      nonFastForward: true
+      requiredLinearHistory: false
+      requiredSignatures: false
+      requiredStatusChecks:
+        enabled: false
+      requiredCodeScanning:
+        enabled: false
+      mergeQueue:
+        enabled: false
       requiredDeployments:
         enabled: false

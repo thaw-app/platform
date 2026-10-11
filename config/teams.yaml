@@ -17,7 +17,8 @@ repoAccess:
     - team: contributors
       permission: push
 
-  # Maintainers only — feed must stay CI/admin-writable, not day-to-day push.
+  # Maintainers only: the feed must stay writable by CI and admins, not by
+  # day-to-day pushes.
   updates:
     - team: maintainers
       permission: admin

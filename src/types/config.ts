@@ -5,6 +5,7 @@ import {
 	MergeStrategySchema,
 	RepoConfigSchema,
 	RepoVisibilitySchema,
+	SecuritySchema,
 	SquashMergeCommitMessageSchema,
 	SquashMergeCommitTitleSchema,
 } from "./repo";
@@ -35,6 +36,12 @@ const OrgDefaultsSchema = v.strictObject({
 		"COMMIT_MESSAGES",
 	),
 	features: OrgFeaturesSchema,
+	security: v.optional(SecuritySchema, {
+		dependabotAlerts: true,
+		dependabotSecurityUpdates: false,
+		secretScanning: true,
+		pushProtection: true,
+	}),
 });
 
 export const OrgConfigSchema = v.strictObject({
@@ -156,8 +163,10 @@ export const RulesetRulesSchema = v.strictObject({
 	nonFastForward: v.boolean(),
 	requiredLinearHistory: v.boolean(),
 	requiredSignatures: v.boolean(),
-	copilotCodeReview: RulesetCopilotCodeReviewSchema,
-	pullRequest: RulesetPullRequestSchema,
+	// Both are optional. A ruleset that omits them requires no pull request
+	// and no Copilot review.
+	copilotCodeReview: v.optional(RulesetCopilotCodeReviewSchema),
+	pullRequest: v.optional(RulesetPullRequestSchema),
 	requiredStatusChecks: RulesetRequiredStatusChecksSchema,
 	requiredCodeScanning: RulesetRequiredCodeScanningSchema,
 	mergeQueue: RulesetMergeQueueSchema,
@@ -188,7 +197,8 @@ export const RulesetBypassActorSchema = v.strictObject({
 		"DeployKey",
 	]),
 	actorId: v.optional(v.number()),
-	bypassMode: v.picklist(["always", "pullRequest", "exempt"]),
+	// GitHub's own spelling; the provider rejects anything else.
+	bypassMode: v.picklist(["always", "pull_request", "exempt"]),
 });
 
 export type RulesetBypassActor = v.InferOutput<typeof RulesetBypassActorSchema>;

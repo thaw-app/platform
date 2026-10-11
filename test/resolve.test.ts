@@ -15,6 +15,12 @@ const defaults = {
 	squashMergeCommitTitle: "PR_TITLE",
 	squashMergeCommitMessage: "COMMIT_MESSAGES",
 	features: { issues: true, wiki: false, projects: false, discussions: false },
+	security: {
+		dependabotAlerts: true,
+		dependabotSecurityUpdates: false,
+		secretScanning: true,
+		pushProtection: true,
+	},
 } satisfies OrgConfig["defaults"];
 
 const baseCtx = {
@@ -48,6 +54,16 @@ describe("buildRepoConfig", () => {
 	it("lets the repo override defaults", () => {
 		const built = buildRepoConfig(repo({ visibility: "public" }), baseCtx);
 		expect(built.visibility).toBe("public");
+	});
+
+	it("takes security settings from org defaults, overridden per repo", () => {
+		expect(buildRepoConfig(repo(), baseCtx).security).toEqual(
+			defaults.security,
+		);
+		expect(
+			buildRepoConfig(repo({ security: { dependabotAlerts: false } }), baseCtx)
+				.security,
+		).toEqual({ ...defaults.security, dependabotAlerts: false });
 	});
 
 	it("resolves pulumiName and organization", () => {
@@ -133,7 +149,7 @@ describe("buildRepoConfig", () => {
 		expect(Object.keys(built.labels ?? {})).toEqual(["global", "local"]);
 	});
 
-	it("bare repos skip org labels, rulesets, and CODEOWNERS", () => {
+	it("bare repos skip org labels and CODEOWNERS, and keep their rulesets", () => {
 		const built = buildRepoConfig(repo({ name: "brand-assets", bare: true }), {
 			...baseCtx,
 			labels: { global: { color: "000000" } },
@@ -165,7 +181,9 @@ describe("buildRepoConfig", () => {
 			],
 		});
 		expect(built.labels).toEqual({});
-		expect(built.resolvedRepoRulesets).toEqual([]);
+		expect(built.resolvedRepoRulesets.map((r) => r.id)).toEqual([
+			"main-default",
+		]);
 		expect(built.codeownersContent).toBe("");
 	});
 });
