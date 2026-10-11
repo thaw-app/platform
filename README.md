@@ -177,7 +177,7 @@ bun run schema
 
 ## Getting started
 
-**Prerequisites:** [Bun](https://bun.sh/) 1.3+, [Pulumi CLI](https://www.pulumi.com/docs/install/), access to the [`diazdesandi`](https://app.pulumi.com/diazdesandi) Pulumi org, and a GitHub token with `admin:org` (and repo scope for managed repositories).
+**Prerequisites:** [Bun](https://bun.sh/) 1.4+, [Pulumi CLI](https://www.pulumi.com/docs/install/), access to the [`diazdesandi`](https://app.pulumi.com/diazdesandi) Pulumi org, and a GitHub token with `admin:org` (and repo scope for managed repositories).
 
 ```sh
 bun install
