@@ -1,22 +1,22 @@
 # yaml-language-server: $schema=./schema/repos.schema.json
 #
 # Pulumi-managed repositories for thaw-app.
-# Out of scope (manual admin, not listed here): Thaw, AXSwift
+# Out of scope (manual admin, not listed here): Thaw, prk-bin, shieldcn,
+# AXSwift6, and platform itself.
 #
-# Branch enforcement is defined in config/rulesets.yaml and applied per-repo
-# when enableRulesets is false (GitHub Free). Use branchProtection here only
-# for repo-specific overrides (e.g. pin a CI check name).
+# Branch enforcement is defined in config/rulesets.yaml, which lists the repos
+# each ruleset is on. A repo on a ruleset that requires status checks names its
+# own CI checks here (requiredStatusChecks).
 repos:
   - name: website
-    description: Thaw project website (GitHub Pages).
+    description: The website for Thaw and Floe, at getthaw.app.
     visibility: public
-    homepage: https://thaw-app.github.io/website/
+    homepage: https://www.getthaw.app
     topics:
       - thaw
       - macos
       - menu-bar
       - website
-      - github-pages
       - documentation
     mergeStrategies:
       - squash
@@ -59,7 +59,7 @@ repos:
     autoInit: true
 
   - name: brand-assets
-    description: Shared Thaw brand assets — headers, icons, packaging art, marketing.
+    description: "Shared Thaw brand assets: headers, icons, packaging art, marketing."
     visibility: public
     adopt: true
     bare: true
@@ -85,6 +85,7 @@ repos:
   - name: raycast-extension
     description: Control Thaw directly from Raycast. Toggle visibility sections, search menu bar items, and open settings without touching your mouse.
     visibility: public
+    homepage: https://www.raycast.com/diazdesandi/thaw
     topics:
       - thaw
       - macos
@@ -94,10 +95,12 @@ repos:
     deleteBranchOnMerge: true
     autoInit: false
     adopt: true
+    requiredStatusChecks:
+      - ci
 
   # Private, proprietary source: bare, so no org labels or CODEOWNERS. Rulesets
-  # are unavailable for private repos on GitHub Free, so it is also excluded in
-  # config/rulesets.yaml.
+  # are unavailable for private repos on GitHub Free, so no ruleset in
+  # config/rulesets.yaml lists it.
   - name: PlatformRuntimeKit
     description: Proprietary Swift package providing current-platform menu bar runtime support for Thaw.
     visibility: private
@@ -130,3 +133,46 @@ repos:
       - squash
     deleteBranchOnMerge: true
     autoInit: true
+    # test-actions.yml runs on every pull request; actionlint only when a
+    # workflow or action file changes, so it cannot be required.
+    requiredStatusChecks:
+      - test
+
+  # Floe keeps its own labels (bare) and has one code owner. Its main branch is
+  # protected the way Thaw's development branch is, with Floe's own check names:
+  # lint is what Thaw calls static_analysis.
+  - name: Floe
+    description: The open source launcher for macOS
+    visibility: public
+    homepage: https://www.getthaw.app/docs/floe
+    mergeStrategies:
+      - squash
+    deleteBranchOnMerge: false
+    autoInit: false
+    adopt: true
+    bare: true
+    hasWiki: true
+    hasProjects: true
+    hasDiscussions: true
+    security:
+      dependabotSecurityUpdates: true
+    codeowners: |
+      * @diazdesandi
+    branchProtection:
+      main:
+        requiredReviewCount: 1
+        dismissStaleReviews: true
+        requireCodeOwnerReviews: true
+        requireLastPushApproval: true
+        requiredStatusChecks:
+          - lint
+          - build
+          - sonarqube
+          - dependency-sca
+        strictStatusChecks: true
+        requireSignedCommits: true
+        requiredLinearHistory: true
+        requireConversationResolution: true
+        allowsForcePushes: false
+        allowsDeletions: false
+        enforceAdmins: false

@@ -1,19 +1,27 @@
 # yaml-language-server: $schema=./schema/members.schema.json
+#
+# GitHub reports an org owner as maintainer of every team they are in and
+# ignores any attempt to set member. Owners are written as maintainer here, so
+# config matches what GitHub returns and the drift check stays quiet.
 members:
   - username: diazdesandi
     teams:
       - slug: maintainers
         role: maintainer
       - slug: contributors
+        role: maintainer
   - username: stonerl
     teams:
       - slug: maintainers
         role: maintainer
       - slug: contributors
+        role: maintainer
   - username: nightah
     teams:
       - slug: contributors
+        role: maintainer
       - slug: maintainers
+        role: maintainer
   - username: alvst
     teams:
       - slug: contributors

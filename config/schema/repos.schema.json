@@ -47,6 +47,9 @@
 					"archived": {
 						"type": "boolean"
 					},
+					"bare": {
+						"type": "boolean"
+					},
 					"hasIssues": {
 						"type": "boolean"
 					},
@@ -58,6 +61,25 @@
 					},
 					"hasDiscussions": {
 						"type": "boolean"
+					},
+					"security": {
+						"type": "object",
+						"properties": {
+							"dependabotAlerts": {
+								"type": "boolean"
+							},
+							"dependabotSecurityUpdates": {
+								"type": "boolean"
+							},
+							"secretScanning": {
+								"type": "boolean"
+							},
+							"pushProtection": {
+								"type": "boolean"
+							}
+						},
+						"required": [],
+						"additionalProperties": false
 					},
 					"labels": {
 						"type": "object",
@@ -77,6 +99,15 @@
 							},
 							"required": ["color"],
 							"additionalProperties": false
+						}
+					},
+					"codeowners": {
+						"type": "string"
+					},
+					"requiredStatusChecks": {
+						"type": "array",
+						"items": {
+							"type": "string"
 						}
 					},
 					"branchProtection": {
@@ -159,10 +190,6 @@
 							"required": ["name"],
 							"additionalProperties": false
 						}
-					},
-					"bare": {
-						"type": "boolean",
-						"description": "Adopt as a plain repo: no org labels, rulesets, CODEOWNERS, or implied team access."
 					}
 				},
 				"required": ["name", "description"],

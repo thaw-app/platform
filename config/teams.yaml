@@ -17,7 +17,8 @@ repoAccess:
     - team: contributors
       permission: push
 
-  # Maintainers only — feed must stay CI/admin-writable, not day-to-day push.
+  # Maintainers only: the feed must stay writable by CI and admins, not by
+  # day-to-day pushes.
   updates:
     - team: maintainers
       permission: admin
@@ -49,6 +50,13 @@ repoAccess:
   ".github":
     - team: maintainers
       permission: admin
+
+  # The same access the two teams have on Thaw.
+  Floe:
+    - team: maintainers
+      permission: maintain
+    - team: contributors
+      permission: push
 
   org-ci:
     - team: maintainers

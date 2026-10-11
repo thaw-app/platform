@@ -4,11 +4,11 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=thaw-app_platform&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=thaw-app_platform)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=thaw-app_platform&metric=coverage)](https://sonarcloud.io/summary/new_code?id=thaw-app_platform)
 
-Platform configuration for the [`thaw-app`](https://github.com/thaw-app) GitHub organization — repositories, teams, branch rulesets, labels, and CODEOWNERS — declared in YAML under [`config/`](config/) and provisioned with [Pulumi](https://www.pulumi.com/) and the [`@pulumi/github`](https://www.pulumi.com/registry/packages/github/) provider. Runs on [Bun](https://bun.sh/).
+Platform configuration for the [`thaw-app`](https://github.com/thaw-app) GitHub organization (repositories, teams, branch rulesets, labels, and CODEOWNERS), declared in YAML under [`config/`](config/) and provisioned with [Pulumi](https://www.pulumi.com/) and the [`@pulumi/github`](https://www.pulumi.com/registry/packages/github/) provider. Runs on [Bun](https://bun.sh/).
 
-This repository is the **control plane** for that org: it lives at [`thaw-app/platform`](https://github.com/thaw-app/platform), is not listed in [`config/repos.yaml`](config/repos.yaml), and is not provisioned by its own Pulumi program.
+This repository is the control plane for that org: it lives at [`thaw-app/platform`](https://github.com/thaw-app/platform), is not listed in [`config/repos.yaml`](config/repos.yaml), and is not provisioned by its own Pulumi program.
 
-**Scope:** only repositories listed in [`config/repos.yaml`](config/repos.yaml) are managed here (teams, labels, CODEOWNERS, branch policy, and so on). Other org repos — notably **`Thaw`** and **`AXSwift`** — are administered manually and intentionally omitted from config (see the header comment in `repos.yaml`).
+**Scope:** only repositories listed in [`config/repos.yaml`](config/repos.yaml) are managed here (teams, labels, CODEOWNERS, branch policy, and so on). Other org repos, notably `Thaw` and `AXSwift6`, are administered manually and intentionally omitted from config (see the header comment in `repos.yaml`).
 
 ## Architecture
 
@@ -84,13 +84,13 @@ Source: [`docs/architecture.mmd`](docs/architecture.mmd). Edit the `.mmd` file a
 
 ## How it works
 
-1. **Load & validate** — [`src/setup/loader.ts`](src/setup/loader.ts) parses each YAML file against a [valibot](https://valibot.dev/) schema in [`src/types/`](src/types/), merges member records from [`config/members.yaml`](config/members.yaml) into team definitions ([`src/setup/members.ts`](src/setup/members.ts)), then runs cross-reference checks ([`src/setup/validate.ts`](src/setup/validate.ts)): unknown team/repo references, branch patterns claimed by multiple rulesets, and labels defined in multiple groups.
-2. **Resolve** — [`src/setup/resolve.ts`](src/setup/resolve.ts) fills each repo from org-wide `defaults` in [`config/org.yaml`](config/org.yaml) and translates config into Pulumi inputs.
-3. **Provision** — [`src/org.ts`](src/org.ts) creates teams (when `enableTeams` is on), org rulesets (when `enableRulesets` is on), and one `OrgRepository` component ([`src/resources/repo.ts`](src/resources/repo.ts)) per entry in `repos.yaml`. Each component owns that repo's team access, repository rulesets (when org rulesets are off), optional branch-protection overrides, deployment environments, labels, and synced `.github/CODEOWNERS`.
+1. **Load and validate.** [`src/setup/loader.ts`](src/setup/loader.ts) parses each YAML file against a [valibot](https://valibot.dev/) schema in [`src/types/`](src/types/), merges member records from [`config/members.yaml`](config/members.yaml) into team definitions ([`src/setup/members.ts`](src/setup/members.ts)), then runs cross-reference checks ([`src/setup/validate.ts`](src/setup/validate.ts)): unknown team/repo references, branch patterns claimed by multiple rulesets, and labels defined in multiple groups.
+2. **Resolve.** [`src/setup/resolve.ts`](src/setup/resolve.ts) fills each repo from org-wide `defaults` in [`config/org.yaml`](config/org.yaml) and translates config into Pulumi inputs.
+3. **Provision.** [`src/org.ts`](src/org.ts) creates teams (when `enableTeams` is on), org rulesets (when `enableRulesets` is on), and one `OrgRepository` component ([`src/resources/repo.ts`](src/resources/repo.ts)) per entry in `repos.yaml`. Each component owns that repo's team access, repository rulesets (when org rulesets are off), optional branch-protection overrides, deployment environments, labels, and synced `.github/CODEOWNERS`.
 
 Schemas use `strictObject`, so an unknown or misspelled YAML key fails the run instead of being silently ignored.
 
-> **Branch enforcement:** [`config/rulesets.yaml`](config/rulesets.yaml) is the single policy source. With `enableRulesets: false` (GitHub Free — the default for `thaw-app`), that policy is provisioned as a **`RepositoryRuleset` on each managed repo** ([`src/resources/rulesets.ts`](src/resources/rulesets.ts)). With `enableRulesets: true` (Team/Enterprise only), the same file provisions **org-level** rulesets instead. Use per-repo `branchProtection` in `repos.yaml` only for legacy overrides (e.g. pin `build` instead of the default `ci` status check).
+> **Branch enforcement:** [`config/rulesets.yaml`](config/rulesets.yaml) is the single policy source. With `enableRulesets: false` (GitHub Free, the default for `thaw-app`), that policy is provisioned as a `RepositoryRuleset` on each managed repo ([`src/resources/rulesets.ts`](src/resources/rulesets.ts)). With `enableRulesets: true` (Team/Enterprise only), the same file provisions org-level rulesets instead. Each ruleset lists the repos it is on, and there are two: a reviewed one (a pull request, one approval, the repo's CI check) and a basic one (the branch cannot be deleted or force-pushed). A repo on the reviewed one names its CI checks in `repos.yaml` under `requiredStatusChecks`, because job names differ from repo to repo.
 
 ## CI/CD
 
@@ -103,12 +103,15 @@ flowchart LR
   end
 
   subgraph ci["CI/CD workflow"]
-    test["test<br/>typecheck · biome · bun test · Sonar"]
+    test["test<br/>typecheck · biome · bun test"]
+    sonar["sonar<br/>coverage + SonarCloud scan"]
     preview["preview<br/>pulumi preview + PR comment"]
     deploy["deploy<br/>pulumi up"]
   end
 
   pr --> test
+  pr --> sonar
+  push --> sonar
   dispatch --> test
   test --> preview
   push --> test
@@ -124,34 +127,39 @@ flowchart LR
 
 | Trigger | Jobs |
 | --- | --- |
-| **PR opened / updated** | test → preview |
+| **PR opened / updated** | test → preview, and sonar alongside |
 | **PR merged → push to `main`** | deploy only (merge commit detected; tests already ran on the PR) |
-| **Direct push to `main`** | test → deploy |
+| **Direct push to `main`** | test → deploy, and sonar alongside |
 | **`workflow_dispatch`** | test (manual) |
 
-On push to `main`, merge commits are detected by message (`Merge pull request …` or squash `… (#123)`). Those skip **test** and run **deploy** only. A direct push (no merge markers) runs **test** then **deploy**.
+On push to `main`, merge commits are detected by message (`Merge pull request …` or squash `… (#123)`). Those skip `test` and run `deploy` only. A direct push (no merge markers) runs `test` then `deploy`.
 
 To skip CI on a PR commit, add `[skip ci]` to the commit message. Required status checks will not run for that commit.
 
-On `main`, **deploy** runs `pulumi up` against stack `diazdesandi/dev`. CI authenticates to Pulumi Cloud via OIDC; the GitHub provider uses the `PULUMI_GITHUB_TOKEN` repository secret (Actions' default `GITHUB_TOKEN` cannot manage org teams, labels, or cross-repo resources).
+`sonar` runs beside `test` and nothing waits on it: a failed scan is a red check, but the preview and the deploy still run.
+
+Every Pulumi run refreshes first, so it compares config against GitHub's current settings and not only against the last recorded state. A setting changed by hand shows up in the preview and in the weekly drift check, and the next `deploy` puts it back to what config says.
+
+On `main`, `deploy` runs `pulumi up` against stack `diazdesandi/dev`. CI authenticates to Pulumi Cloud via OIDC; the GitHub provider uses the `PULUMI_GITHUB_TOKEN` repository secret (Actions' default `GITHUB_TOKEN` cannot manage org teams, labels, or cross-repo resources).
 
 ### Secrets
 
 | Name | Where | Purpose |
 | --- | --- | --- |
-| `PULUMI_GITHUB_TOKEN` | GitHub Actions secret | Classic PAT with `admin:org` and `repo`; passed to the Pulumi GitHub provider as `GITHUB_TOKEN` in CI |
-| `SONAR_TOKEN` | GitHub Actions secret | SonarCloud analysis in the `test` job |
+| `PULUMI_GITHUB_TOKEN` | GitHub Actions secret | Classic PAT with `admin:org` and `repo`; passed to the Pulumi GitHub provider as `GITHUB_TOKEN` when CI runs `up` |
+| `PULUMI_GITHUB_READ_TOKEN` | GitHub Actions secret, optional | Read-only token for `preview` runs (pull requests and the drift check), which execute a branch's code. Without it, previews fall back to `PULUMI_GITHUB_TOKEN` |
+| `SONAR_TOKEN` | GitHub Actions secret | SonarCloud analysis in the `sonar` job |
 | `github:token` | Pulumi stack config (`pulumi config set --secret`) | Same PAT scope for local `pulumi preview` / `pulumi up`; not read from Actions |
 
-Pulumi Cloud access in CI uses OIDC ([`pulumi/auth-actions`](.github/workflows/pulumi.yml)) — no long-lived Pulumi token in repository secrets.
+Pulumi Cloud access in CI uses OIDC ([`pulumi/auth-actions`](.github/workflows/pulumi.yml)), so repository secrets hold no long-lived Pulumi token.
 
 ## Config files
 
 | File | Schema | Purpose |
 | --- | --- | --- |
-| [`config/org.yaml`](config/org.yaml) | `OrgConfigSchema` | Org-wide defaults (visibility, merge strategy, squash commit shaping, feature toggles). |
-| [`config/repos.yaml`](config/repos.yaml) | `ReposFileSchema` | Repositories and per-repo overrides (branch protection only for explicit exceptions). |
-| [`config/rulesets.yaml`](config/rulesets.yaml) | `RulesetsFileSchema` | Org-level branch/tag/push rulesets. |
+| [`config/org.yaml`](config/org.yaml) | `OrgConfigSchema` | Org-wide defaults (visibility, merge strategy, squash commit shaping, feature toggles, security settings). |
+| [`config/repos.yaml`](config/repos.yaml) | `ReposFileSchema` | Repositories and per-repo overrides, including the CI checks a ruleset requires of that repo. |
+| [`config/rulesets.yaml`](config/rulesets.yaml) | `RulesetsFileSchema` | Branch/tag/push rulesets, and the repos each one is on. |
 | [`config/teams.yaml`](config/teams.yaml) | `TeamsFileSchema` | Teams and per-repo team access. |
 | [`config/members.yaml`](config/members.yaml) | `MembersFileSchema` | Org members and their team memberships. |
 | [`config/labels.yaml`](config/labels.yaml) | `LabelGroupsSchema` | Issue/PR labels, grouped; applied to every repo. |
@@ -169,7 +177,7 @@ bun run schema
 
 ## Getting started
 
-**Prerequisites:** [Bun](https://bun.sh/) 1.3+, [Pulumi CLI](https://www.pulumi.com/docs/install/), access to the [`diazdesandi`](https://app.pulumi.com/diazdesandi) Pulumi org, and a GitHub token with `admin:org` (and repo scope for managed repositories).
+**Prerequisites:** [Bun](https://bun.sh/) 1.4+, [Pulumi CLI](https://www.pulumi.com/docs/install/), access to the [`diazdesandi`](https://app.pulumi.com/diazdesandi) Pulumi org, and a GitHub token with `admin:org` (and repo scope for managed repositories).
 
 ```sh
 bun install
@@ -183,21 +191,25 @@ Local runs need `pulumi login`. CI uses OIDC instead of a local token.
 
 ## Common tasks
 
-**Add a repository** — append an entry to `config/repos.yaml` (only `name` and `description` are required; everything else inherits from `org.yaml` defaults). Grant team access in `config/teams.yaml` under `repoAccess`.
+**Add a repository.** Append an entry to `config/repos.yaml` (only `name` and `description` are required; everything else inherits from `org.yaml` defaults). Grant team access in `config/teams.yaml` under `repoAccess`. A new repo has no branch rules until a ruleset in `config/rulesets.yaml` lists it; if that ruleset requires status checks, give the repo's check names under `requiredStatusChecks`.
 
 Set `autoInit: true` when Pulumi should create an empty GitHub repo (GitHub seeds the default branch). Set `autoInit: false` when the repo already exists. For pre-existing repos, add `adopt: true` so the first `pulumi up` imports the repo name into state (scoped by `github:owner`; remove `adopt` after a successful apply). Synced `.github/CODEOWNERS` comes from [`config/codeowners.yaml`](config/codeowners.yaml).
 
-**Import an existing repository** — `autoInit: false`, `adopt: true`, then `pulumi up`. If a prior apply failed partway (component created, repository not), re-run `pulumi up` with `adopt: true` still set.
+**Import an existing repository.** Set `autoInit: false` and `adopt: true`, then run `pulumi up`. If a prior apply failed partway (component created, repository not), re-run `pulumi up` with `adopt: true` still set.
 
-**Rename a managed repo on GitHub** — rename in the GitHub UI or API, update `name` in `repos.yaml`, and set `pulumiName` to the previous Pulumi resource prefix so state stays aligned (see `.github` / `pulumiName: dot-github`). Run [`scripts/rename_dot_github.sh`](scripts/rename_dot_github.sh) before applying the `dot-github` → `.github` config change.
+**Rename a managed repo on GitHub.** Rename it in the GitHub UI or API, update `name` in `repos.yaml`, and set `pulumiName` to the previous Pulumi resource prefix so state stays aligned (see `.github` / `pulumiName: dot-github`). Run [`scripts/rename_dot_github.sh`](scripts/rename_dot_github.sh) before applying the `dot-github` → `.github` config change.
 
-**Add a team** — add it under `teams:` in `config/teams.yaml`, then reference its `slug` in `repoAccess` and/or `config/members.yaml`.
+**Add a team.** Add it under `teams:` in `config/teams.yaml`, then reference its `slug` in `repoAccess` and/or `config/members.yaml`.
 
-**Add a member** — append an entry to `config/members.yaml` with their `username` and team `slug`s. Omit `role` for the default (`member`); set `role: maintainer` only when they should manage that team's roster.
+**Add a member.** Append an entry to `config/members.yaml` with their `username` and team `slug`s. Omit `role` for the default (`member`); set `role: maintainer` only when they should manage that team's roster.
 
-**Add a ruleset** — append to `config/rulesets.yaml`. A branch pattern may be owned by only one ruleset (validation enforces this).
+**Add a ruleset.** Append to `config/rulesets.yaml` and list its repos under `conditions.repositoryName.includes`. Two rulesets may cover the same branch pattern only when they list different repos, and a listed repo must be one in `repos.yaml`; validation checks both. Leave `pullRequest` out for a ruleset that should not require one.
 
-**Add a label** — add it under any group in `config/labels.yaml`. Label names must be unique across groups.
+**Change a repo's security settings.** `defaults.security` in `config/org.yaml` sets Dependabot alerts, Dependabot security updates, secret scanning and push protection for every managed repo. A repo overrides any of them under `security` in `config/repos.yaml`, for example `security: { dependabotAlerts: false }`. Secret scanning and push protection are applied to public repos only, since GitHub Free does not offer them on private ones.
+
+**Change CODEOWNERS.** Edit `config/codeowners.yaml`, or set `codeowners` on a repo in `config/repos.yaml` to give that repo its own content. Pulumi commits the file to each repo's default branch, which the reviewed ruleset tier does not allow. For the repos in that tier, open a pull request in each with the same content first; Pulumi then finds the file already matching and writes nothing.
+
+**Add a label.** Add it under any group in `config/labels.yaml`. Label names must be unique across groups.
 
 ## Scripts
 
@@ -216,7 +228,7 @@ Pre-commit hooks ([`.husky/pre-commit`](.husky/pre-commit)) run `biome lint`, `b
 
 ### Bootstrap README cleanup (one-time)
 
-If `pulumi up` fails deleting `*-bootstrap` `RepositoryFile` resources with **409** (“Changes must be made through a pull request”), branch protection was applied in the same run and GitHub no longer allows the API to delete those placeholder READMEs. The files are harmless — drop them from **Pulumi state only**:
+If `pulumi up` fails deleting `*-bootstrap` `RepositoryFile` resources with 409 ("Changes must be made through a pull request"), branch protection was applied in the same run and GitHub no longer allows the API to delete those placeholder READMEs. The files are harmless, so drop them from Pulumi state only:
 
 ```sh
 pulumi stack select dev
@@ -241,23 +253,23 @@ Per-stack settings use the `thaw-config:` namespace (Pulumi project name from [`
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `dev` | `diazdesandi` (personal) | Governs the live [`thaw-app`](https://github.com/thaw-app) org | [CI/CD](.github/workflows/ci.yml) `deploy` job on push to `main` | `thaw-app` | `false`¹ | `true` | [`Pulumi.dev.yaml`](Pulumi.dev.yaml) |
 
-Pulumi project: **`thaw-config`**. Stack reference: **`diazdesandi/dev`**. `github:owner` is the **GitHub** org, not your Pulumi login.
+Pulumi project: `thaw-config`. Stack reference: `diazdesandi/dev`. `github:owner` is the GitHub org, not your Pulumi login.
 
 ```sh
 pulumi config --stack dev   # inspect thaw-config:* and github:* keys
 ```
 
-¹ **`enableRulesets: false`** on GitHub Free — org rulesets return **404**. Branch policy from [`config/rulesets.yaml`](config/rulesets.yaml) is applied via a **`RepositoryRuleset` on each managed repo**. Managed-repo CI jobs may use any of **`ci`**, **`build`**, or **`test`** as the status check name (`acceptAnyOf` in rulesets; provisioning pins `ci` by default — override per repo in `branchProtection` if needed).
+¹ On GitHub Free (`enableRulesets: false`) org rulesets return 403. Each ruleset in [`config/rulesets.yaml`](config/rulesets.yaml) is applied as a `RepositoryRuleset` on the repos it lists. A repo's required status checks are the names it gives under `requiredStatusChecks` in `repos.yaml`; a repo that gives none is held to the first name in the ruleset's `acceptAnyOf`.
 
 ### Drift detection
 
-[`.github/workflows/drift.yml`](.github/workflows/drift.yml) runs weekly (Mondays 06:17 UTC) and on `workflow_dispatch`. It runs `pulumi preview --expect-no-changes` against `dev` — read-only, no state mutation.
+[`.github/workflows/drift.yml`](.github/workflows/drift.yml) runs weekly (Mondays 06:17 UTC) and on `workflow_dispatch`. It runs `pulumi preview --expect-no-changes` against `dev`, which is read-only and changes no state.
 
-**When it fails**, the workflow opens a GitHub issue (deduped by title). Remediate one of two ways:
+When it fails, the workflow opens a GitHub issue (deduped by title). Remediate one of two ways:
 
-1. **Keep the change** — update [`config/`](config/), open a PR, merge; CI/CD runs `pulumi up` on `main`.
-2. **Reject the change** — revert the manual edit in the GitHub UI, then re-run **Drift detection** via `workflow_dispatch`.
+1. **Keep the change.** Update [`config/`](config/), open a PR and merge it; CI/CD runs `pulumi up` on `main`.
+2. **Reject the change.** Revert the manual edit in the GitHub UI, then re-run Drift detection via `workflow_dispatch`.
 
 When the check passes again, the `cleanup` job closes any open drift issues automatically.
 
-Some drift is tolerated by design (per-repo ruleset exceptions managed in the GitHub UI — see comment in [`src/resources/rulesets.ts`](src/resources/rulesets.ts)). If weekly noise appears, document or codify those exceptions in config.
+Some drift is tolerated by design (per-repo ruleset exceptions managed in the GitHub UI; see the comment in [`src/resources/rulesets.ts`](src/resources/rulesets.ts)). If weekly noise appears, document or codify those exceptions in config.

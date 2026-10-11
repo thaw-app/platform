@@ -7,7 +7,11 @@ import type {
 	TeamResourceMap,
 	TeamsConfig,
 } from "@/types";
-import { mergeRepoBranchProtection, rulesetsForRepo } from "./rulesets";
+import {
+	mergeRepoBranchProtection,
+	rulesetsForRepo,
+	withRepoStatusChecks,
+} from "./rulesets";
 import type { RepoBuildContext } from "./types";
 import { compact, normalizeActors, normalizeBranchPattern } from "./utils";
 
@@ -81,7 +85,7 @@ export function buildRepoConfig(
 		rulesets,
 		provisionRepoRulesets,
 	} = ctx;
-	const { features } = defaults;
+	const { features, security } = defaults;
 
 	const branchProtection = mergeRepoBranchProtection(
 		repo,
@@ -106,19 +110,24 @@ export function buildRepoConfig(
 		hasWiki: repo.hasWiki ?? features.wiki,
 		hasProjects: repo.hasProjects ?? features.projects,
 		hasDiscussions: repo.hasDiscussions ?? features.discussions,
+		security: { ...security, ...repo.security },
 		labels: repo.bare
 			? { ...(repo.labels ?? {}) }
 			: { ...labels, ...repo.labels },
 		teams: teamAccess,
-		resolvedRepoRulesets:
-			repo.bare || !provisionRepoRulesets
-				? []
-				: rulesetsForRepo(repo.name, rulesets),
+		// rulesets.yaml alone decides which repos a ruleset is on. A bare repo
+		// skips labels and CODEOWNERS but can still have rulesets.
+		resolvedRepoRulesets: provisionRepoRulesets
+			? rulesetsForRepo(repo.name, rulesets).map((r) =>
+					withRepoStatusChecks(r, repo.requiredStatusChecks),
+				)
+			: [],
 		resolvedBranchProtection,
 		squashMergeCommitTitle: defaults.squashMergeCommitTitle,
 		squashMergeCommitMessage: defaults.squashMergeCommitMessage,
 		defaultBranch: defaults.defaultBranch,
-		codeownersContent: repo.bare ? "" : ctx.codeownersContent,
+		codeownersContent:
+			repo.codeowners ?? (repo.bare ? "" : ctx.codeownersContent),
 		pulumiName: repo.pulumiName ?? repo.name,
 		organization,
 	};

@@ -4,9 +4,9 @@ import { normalizeRulesetRefName } from "@/setup/utils";
 import type { RulesetConfig, RulesetRules } from "@/types";
 
 // Org rulesets (enableRulesets: true) apply uniformly when the org is on Team+.
-// Per-repo rulesets (enableRulesets: false) mirror the same YAML on each managed
-// repo — available on GitHub Free. Use repos.yaml branchProtection only for
-// legacy per-pattern overrides (prefer ruleset repositoryName excludes/includes).
+// Per-repo rulesets (enableRulesets: false) apply the same YAML to the repos
+// each ruleset lists, which works on GitHub Free. Use repos.yaml
+// branchProtection only for legacy per-pattern overrides.
 
 function organizationRulesetStatusChecks(
 	ruleset: RulesetConfig,

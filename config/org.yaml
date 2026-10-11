@@ -15,3 +15,10 @@ defaults:
     wiki: false
     projects: false
     discussions: false
+  # Secret scanning and push protection reach public repos only: GitHub Free
+  # does not offer them on private ones.
+  security:
+    dependabotAlerts: true
+    dependabotSecurityUpdates: false
+    secretScanning: true
+    pushProtection: true

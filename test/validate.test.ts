@@ -15,6 +15,12 @@ const defaults = {
 	squashMergeCommitTitle: "PR_TITLE",
 	squashMergeCommitMessage: "COMMIT_MESSAGES",
 	features: { issues: true, wiki: false, projects: false, discussions: false },
+	security: {
+		dependabotAlerts: true,
+		dependabotSecurityUpdates: false,
+		secretScanning: true,
+		pushProtection: true,
+	},
 } satisfies OrgConfig["defaults"];
 
 const baseConfig = (): InfraConfig => ({
@@ -99,6 +105,33 @@ describe("validateCrossRefs", () => {
 		expect(issues[0]?.message).toMatch(/appears in multiple rulesets \(a, b\)/);
 	});
 
+	it("flags a ruleset that names a repo which is not managed", () => {
+		const cfg = baseConfig();
+		cfg.rulesets = [
+			{
+				...mainRuleset("a"),
+				conditions: {
+					refName: { includes: ["~DEFAULT_BRANCH"] },
+					repositoryName: { includes: ["r", "ghost"], excludes: [] },
+				},
+			},
+		];
+		const issues = validateCrossRefs(cfg, {});
+		expect(issues).toHaveLength(1);
+		expect(issues[0]?.path).toBe("rulesets.a.conditions.repositoryName");
+		expect(issues[0]?.message).toMatch(/unknown repo "ghost"/);
+	});
+
+	it("warns when a repo names checks that no ruleset requires", () => {
+		const cfg = baseConfig();
+		repoEntry(cfg).requiredStatusChecks = ["ci"];
+		cfg.rulesets = [mainRuleset("a")];
+		const issues = validateCrossRefs(cfg, {});
+		expect(issues).toHaveLength(1);
+		expect(issues[0]?.severity).toBe("warning");
+		expect(issues[0]?.path).toBe("repos.r.requiredStatusChecks");
+	});
+
 	it("flags a label defined in more than one group", () => {
 		const labelGroups: LabelGroups = {
 			bugs: { dup: { color: "ffffff" } },
@@ -174,6 +207,7 @@ describe("validateCrossRefs", () => {
 
 	it("ignores branch protection when ruleset repo condition excludes the repo", () => {
 		const cfg = baseConfig();
+		cfg.repos.push({ name: "other-repo", description: "d" });
 		cfg.rulesets = [
 			{
 				...mainRuleset("scoped"),
@@ -220,6 +254,10 @@ describe("validateCrossRefs", () => {
 
 	it("does not flag duplicate patterns across disjoint repository scopes", () => {
 		const cfg = baseConfig();
+		cfg.repos.push(
+			{ name: "repo-a", description: "d" },
+			{ name: "repo-b", description: "d" },
+		);
 		cfg.rulesets = [
 			{
 				...mainRuleset("a"),
@@ -237,5 +275,34 @@ describe("validateCrossRefs", () => {
 			},
 		];
 		expect(validateCrossRefs(cfg, {})).toEqual([]);
+	});
+
+	it("rejects a security feature without the one it needs", () => {
+		const cfg = baseConfig();
+		cfg.repos = [
+			{
+				name: "r",
+				description: "d",
+				security: { dependabotAlerts: false, dependabotSecurityUpdates: true },
+			},
+			{
+				name: "s",
+				description: "d",
+				visibility: "public",
+				security: { secretScanning: false },
+			},
+			// Private (the default here): secret scanning is never applied.
+			{ name: "p", description: "d", security: { secretScanning: false } },
+		];
+		expect(
+			validateCrossRefs(cfg, {}).map((i) => [i.path, i.message, i.severity]),
+		).toEqual([
+			[
+				"repos.r.security",
+				"dependabotSecurityUpdates needs dependabotAlerts",
+				"error",
+			],
+			["repos.s.security", "pushProtection needs secretScanning", "error"],
+		]);
 	});
 });

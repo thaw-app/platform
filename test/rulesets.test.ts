@@ -3,6 +3,7 @@ import {
 	mergeRepoBranchProtection,
 	rulesetAppliesToRepo,
 	rulesetsForRepo,
+	withRepoStatusChecks,
 } from "@/setup/rulesets";
 import type { RepoConfig, RulesetConfig } from "@/types";
 
@@ -105,5 +106,28 @@ describe("mergeRepoBranchProtection", () => {
 			"main",
 		);
 		expect(merged).toEqual({ main: { requiredStatusChecks: ["build"] } });
+	});
+});
+
+describe("withRepoStatusChecks", () => {
+	it("requires the repo's own checks in place of the ruleset's", () => {
+		const checks = withRepoStatusChecks(mainRuleset(), ["test"]).rules
+			.requiredStatusChecks;
+		expect(checks.requiredChecks).toEqual([{ context: "test" }]);
+		expect(checks.acceptAnyOf).toBeUndefined();
+		expect(checks.strictRequiredStatusChecksPolicy).toBe(true);
+	});
+
+	it("leaves the ruleset as written when the repo names no checks", () => {
+		const ruleset = mainRuleset();
+		expect(withRepoStatusChecks(ruleset, undefined)).toBe(ruleset);
+		expect(withRepoStatusChecks(ruleset, [])).toBe(ruleset);
+	});
+
+	it("adds no checks to a ruleset that requires none", () => {
+		const ruleset = mainRuleset({
+			rules: { ...defaultRules(), requiredStatusChecks: { enabled: false } },
+		});
+		expect(withRepoStatusChecks(ruleset, ["test"])).toBe(ruleset);
 	});
 });
