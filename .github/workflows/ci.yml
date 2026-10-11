@@ -27,14 +27,17 @@ env:
 jobs:
   test:
     if: |
-      github.event_name == 'pull_request' ||
-      github.event_name == 'merge_group' ||
-      github.event_name == 'workflow_dispatch' ||
+      github.repository == 'thaw-app/platform' &&
       (
-        github.event_name == 'push' &&
-        github.ref == 'refs/heads/main' &&
-        !startsWith(github.event.head_commit.message, 'Merge pull request') &&
-        !contains(github.event.head_commit.message, '(#')
+        github.event_name == 'pull_request' ||
+        github.event_name == 'merge_group' ||
+        github.event_name == 'workflow_dispatch' ||
+        (
+          github.event_name == 'push' &&
+          github.ref == 'refs/heads/main' &&
+          !startsWith(github.event.head_commit.message, 'Merge pull request') &&
+          !contains(github.event.head_commit.message, '(#')
+        )
       )
     runs-on: ubuntu-slim
     steps:
@@ -65,7 +68,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   preview:
-    if: github.event_name == 'pull_request'
+    if: github.repository == 'thaw-app/platform' && github.event_name == 'pull_request'
     needs: test
     permissions:
       pull-requests: write
@@ -79,6 +82,7 @@ jobs:
   deploy:
     needs: test
     if: |
+      github.repository == 'thaw-app/platform' &&
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main' &&
       always() &&

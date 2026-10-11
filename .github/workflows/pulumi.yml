@@ -16,6 +16,7 @@ on:
 
 jobs:
   run:
+    if: github.repository == 'thaw-app/platform'
     runs-on: ubuntu-slim
     env:
       HUSKY: 0
