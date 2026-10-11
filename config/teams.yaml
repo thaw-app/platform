@@ -51,6 +51,13 @@ repoAccess:
     - team: maintainers
       permission: admin
 
+  # The same access the two teams have on Thaw.
+  Floe:
+    - team: maintainers
+      permission: maintain
+    - team: contributors
+      permission: push
+
   org-ci:
     - team: maintainers
       permission: admin

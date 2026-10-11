@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=./schema/repos.schema.json
 #
 # Pulumi-managed repositories for thaw-app.
-# Out of scope (manual admin, not listed here): Thaw, Floe, prk-bin, shieldcn,
+# Out of scope (manual admin, not listed here): Thaw, prk-bin, shieldcn,
 # AXSwift6, and platform itself.
 #
 # Branch enforcement is defined in config/rulesets.yaml, which lists the repos
@@ -137,3 +137,40 @@ repos:
     # workflow or action file changes, so it cannot be required.
     requiredStatusChecks:
       - test
+
+  # Floe keeps its own labels and CODEOWNERS (bare). Its main branch is
+  # protected the way Thaw's development branch is, with Floe's own check names:
+  # lint is what Thaw calls static_analysis.
+  - name: Floe
+    description: The open source launcher for macOS
+    visibility: public
+    homepage: https://www.getthaw.app/docs/floe
+    mergeStrategies:
+      - squash
+    deleteBranchOnMerge: false
+    autoInit: false
+    adopt: true
+    bare: true
+    hasWiki: true
+    hasProjects: true
+    hasDiscussions: true
+    security:
+      dependabotSecurityUpdates: true
+    branchProtection:
+      main:
+        requiredReviewCount: 1
+        dismissStaleReviews: true
+        requireCodeOwnerReviews: true
+        requireLastPushApproval: true
+        requiredStatusChecks:
+          - lint
+          - build
+          - sonarqube
+          - dependency-sca
+        strictStatusChecks: true
+        requireSignedCommits: true
+        requiredLinearHistory: true
+        requireConversationResolution: true
+        allowsForcePushes: false
+        allowsDeletions: false
+        enforceAdmins: false

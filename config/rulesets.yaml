@@ -11,8 +11,9 @@
 #                      Merges do not wait on a review or a check.
 #
 # PlatformRuntimeKit is in neither list: it is private, and rulesets are
-# unavailable for private repos on GitHub Free. Thaw and Floe are not managed
-# here at all.
+# unavailable for private repos on GitHub Free. Floe is in neither list either:
+# its main branch has classic branch protection in repos.yaml, matching Thaw's.
+# Thaw is not managed here at all.
 #
 # A repo names its own CI checks in repos.yaml (requiredStatusChecks), since
 # job names differ per repo. For a repo that names none, GitHub requires the

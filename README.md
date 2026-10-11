@@ -8,7 +8,7 @@ Platform configuration for the [`thaw-app`](https://github.com/thaw-app) GitHub 
 
 This repository is the control plane for that org: it lives at [`thaw-app/platform`](https://github.com/thaw-app/platform), is not listed in [`config/repos.yaml`](config/repos.yaml), and is not provisioned by its own Pulumi program.
 
-**Scope:** only repositories listed in [`config/repos.yaml`](config/repos.yaml) are managed here (teams, labels, CODEOWNERS, branch policy, and so on). Other org repos, notably `Thaw`, `Floe` and `AXSwift6`, are administered manually and intentionally omitted from config (see the header comment in `repos.yaml`).
+**Scope:** only repositories listed in [`config/repos.yaml`](config/repos.yaml) are managed here (teams, labels, CODEOWNERS, branch policy, and so on). Other org repos, notably `Thaw` and `AXSwift6`, are administered manually and intentionally omitted from config (see the header comment in `repos.yaml`).
 
 ## Architecture
 
