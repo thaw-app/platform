@@ -82,6 +82,9 @@ export const RepoConfigSchema = v.pipe(
 		hasDiscussions: v.optional(v.boolean()),
 		security: v.optional(v.partial(SecuritySchema)),
 		labels: v.optional(LabelSetSchema),
+		// CODEOWNERS content for this repo, in place of the org template. A
+		// bare repo gets no CODEOWNERS unless it sets this.
+		codeowners: v.optional(v.string()),
 		// The checks this repo's CI reports. A ruleset on the repo that requires
 		// status checks requires these, since job names differ per repo.
 		requiredStatusChecks: v.optional(v.array(v.string())),

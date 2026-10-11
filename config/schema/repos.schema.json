@@ -101,6 +101,9 @@
 							"additionalProperties": false
 						}
 					},
+					"codeowners": {
+						"type": "string"
+					},
 					"requiredStatusChecks": {
 						"type": "array",
 						"items": {

@@ -126,7 +126,8 @@ export function buildRepoConfig(
 		squashMergeCommitTitle: defaults.squashMergeCommitTitle,
 		squashMergeCommitMessage: defaults.squashMergeCommitMessage,
 		defaultBranch: defaults.defaultBranch,
-		codeownersContent: repo.bare ? "" : ctx.codeownersContent,
+		codeownersContent:
+			repo.codeowners ?? (repo.bare ? "" : ctx.codeownersContent),
 		pulumiName: repo.pulumiName ?? repo.name,
 		organization,
 	};

@@ -66,6 +66,22 @@ describe("buildRepoConfig", () => {
 		).toEqual({ ...defaults.security, dependabotAlerts: false });
 	});
 
+	it("uses a repo's own CODEOWNERS over the org template, bare or not", () => {
+		const own = { codeowners: "* @someone\n" };
+		expect(buildRepoConfig(repo(), baseCtx).codeownersContent).toBe(
+			baseCtx.codeownersContent,
+		);
+		expect(buildRepoConfig(repo(own), baseCtx).codeownersContent).toBe(
+			own.codeowners,
+		);
+		expect(
+			buildRepoConfig(repo({ bare: true }), baseCtx).codeownersContent,
+		).toBe("");
+		expect(
+			buildRepoConfig(repo({ ...own, bare: true }), baseCtx).codeownersContent,
+		).toBe(own.codeowners);
+	});
+
 	it("resolves pulumiName and organization", () => {
 		const built = buildRepoConfig(
 			repo({ pulumiName: "dot-github", name: ".github" }),

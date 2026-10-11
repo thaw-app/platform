@@ -138,7 +138,7 @@ repos:
     requiredStatusChecks:
       - test
 
-  # Floe keeps its own labels and CODEOWNERS (bare). Its main branch is
+  # Floe keeps its own labels (bare) and has one code owner. Its main branch is
   # protected the way Thaw's development branch is, with Floe's own check names:
   # lint is what Thaw calls static_analysis.
   - name: Floe
@@ -156,6 +156,8 @@ repos:
     hasDiscussions: true
     security:
       dependabotSecurityUpdates: true
+    codeowners: |
+      * @diazdesandi
     branchProtection:
       main:
         requiredReviewCount: 1
