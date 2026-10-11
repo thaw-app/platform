@@ -146,7 +146,8 @@ On `main`, `deploy` runs `pulumi up` against stack `diazdesandi/dev`. CI authent
 
 | Name | Where | Purpose |
 | --- | --- | --- |
-| `PULUMI_GITHUB_TOKEN` | GitHub Actions secret | Classic PAT with `admin:org` and `repo`; passed to the Pulumi GitHub provider as `GITHUB_TOKEN` in CI |
+| `PULUMI_GITHUB_TOKEN` | GitHub Actions secret | Classic PAT with `admin:org` and `repo`; passed to the Pulumi GitHub provider as `GITHUB_TOKEN` when CI runs `up` |
+| `PULUMI_GITHUB_READ_TOKEN` | GitHub Actions secret, optional | Read-only token for `preview` runs (pull requests and the drift check), which execute a branch's code. Without it, previews fall back to `PULUMI_GITHUB_TOKEN` |
 | `SONAR_TOKEN` | GitHub Actions secret | SonarCloud analysis in the `sonar` job |
 | `github:token` | Pulumi stack config (`pulumi config set --secret`) | Same PAT scope for local `pulumi preview` / `pulumi up`; not read from Actions |
 

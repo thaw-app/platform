@@ -20,6 +20,10 @@ jobs:
     runs-on: ubuntu-slim
     env:
       HUSKY: 0
+      # Only `up` gets the admin PAT. A preview runs the pull request's own
+      # code, so it gets the read-only token when that secret is set, and falls
+      # back to the admin PAT until then.
+      PROVIDER_TOKEN: ${{ inputs.command == 'up' && secrets.PULUMI_GITHUB_TOKEN || secrets.PULUMI_GITHUB_READ_TOKEN || secrets.PULUMI_GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -42,21 +46,19 @@ jobs:
 
       - name: Verify GitHub PAT for provider
         run: |
-          if [ -z "$PULUMI_GITHUB_TOKEN" ]; then
+          if [ -z "$PROVIDER_TOKEN" ]; then
             echo "::error::Repository secret PULUMI_GITHUB_TOKEN is missing or empty."
             echo "::error::Add a classic PAT (admin:org + repo) under Settings → Secrets → Actions."
             echo "::error::Pulumi Cloud stack github:token is not used in CI: Actions always sets GITHUB_TOKEN unless overridden here."
             exit 1
           fi
-        env:
-          PULUMI_GITHUB_TOKEN: ${{ secrets.PULUMI_GITHUB_TOKEN }}
 
       - name: Run Pulumi ${{ inputs.command }}
         uses: pulumi/actions@8e5e406f4007fca908480587cb9893c07090f58d # v7.0.0
         env:
           # Override the job's default GITHUB_TOKEN: Actions' integration token
-          # cannot manage org teams, labels, or cross-repo resources.
-          GITHUB_TOKEN: ${{ secrets.PULUMI_GITHUB_TOKEN }}
+          # cannot read or manage org teams, labels, or cross-repo resources.
+          GITHUB_TOKEN: ${{ env.PROVIDER_TOKEN }}
         with:
           command: ${{ inputs.command }}
           stack-name: diazdesandi/dev
