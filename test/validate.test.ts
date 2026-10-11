@@ -285,7 +285,14 @@ describe("validateCrossRefs", () => {
 				description: "d",
 				security: { dependabotAlerts: false, dependabotSecurityUpdates: true },
 			},
-			{ name: "s", description: "d", security: { secretScanning: false } },
+			{
+				name: "s",
+				description: "d",
+				visibility: "public",
+				security: { secretScanning: false },
+			},
+			// Private (the default here): secret scanning is never applied.
+			{ name: "p", description: "d", security: { secretScanning: false } },
 		];
 		expect(
 			validateCrossRefs(cfg, {}).map((i) => [i.path, i.message, i.severity]),

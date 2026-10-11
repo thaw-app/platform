@@ -206,6 +206,8 @@ Set `autoInit: true` when Pulumi should create an empty GitHub repo (GitHub seed
 
 **Change a repo's security settings.** `defaults.security` in `config/org.yaml` sets Dependabot alerts, Dependabot security updates, secret scanning and push protection for every managed repo. A repo overrides any of them under `security` in `config/repos.yaml`, for example `security: { dependabotAlerts: false }`. Secret scanning and push protection are applied to public repos only, since GitHub Free does not offer them on private ones.
 
+**Change CODEOWNERS.** Edit `config/codeowners.yaml`. Pulumi commits the file to each repo's default branch, which the reviewed ruleset tier does not allow. For the repos in that tier, open a pull request in each with the same content first; Pulumi then finds the file already matching and writes nothing.
+
 **Add a label.** Add it under any group in `config/labels.yaml`. Label names must be unique across groups.
 
 ## Scripts

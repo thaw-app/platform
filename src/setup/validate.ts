@@ -235,17 +235,19 @@ function validateRulesetBranchProtectionOverlap(
 	});
 }
 
-// GitHub rejects these pairs: each feature builds on the one it needs.
+// GitHub rejects these pairs: each feature builds on the one it needs. Secret
+// scanning is only applied to public repos, so only they are checked for it.
 function validateSecurity(config: InfraConfig): ValidationIssue[] {
 	const { defaults } = config.org;
 	return config.repos.flatMap((repo) => {
 		const security = { ...defaults.security, ...repo.security };
+		const isPublic = (repo.visibility ?? defaults.visibility) === "public";
 		const path = `repos.${repo.name}.security`;
 		return [
 			...(security.dependabotSecurityUpdates && !security.dependabotAlerts
 				? [issue(path, "dependabotSecurityUpdates needs dependabotAlerts")]
 				: []),
-			...(security.pushProtection && !security.secretScanning
+			...(isPublic && security.pushProtection && !security.secretScanning
 				? [issue(path, "pushProtection needs secretScanning")]
 				: []),
 		];
