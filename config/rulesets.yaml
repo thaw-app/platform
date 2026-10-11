@@ -33,8 +33,9 @@ rulesets:
     # branch, so a change to config/codeowners.yaml reaches these repos by pull
     # request.
     bypassActors:
+      # No actorId: GitHub stores none for organization admins, so naming one
+      # shows as a change on every run.
       - actorType: OrganizationAdmin
-        actorId: 1
         bypassMode: pull_request
       - actorType: RepositoryRole
         actorId: 5 # repository admin
@@ -55,9 +56,8 @@ rulesets:
       requiredLinearHistory: true
       # Merges are squashed by GitHub, which signs them.
       requiredSignatures: true
-      copilotCodeReview:
-        reviewDraftPullRequests: false
-        reviewOnPush: false
+      # No copilotCodeReview: the rule's presence is what requests a Copilot
+      # review on every pull request.
       pullRequest:
         requiredApprovingReviewCount: 1
         dismissStaleReviewsOnPush: true

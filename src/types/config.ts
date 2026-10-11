@@ -2,6 +2,7 @@ import { groupBy } from "es-toolkit";
 import * as v from "valibot";
 import { LabelSetSchema } from "./label";
 import {
+	DependabotDefaultsSchema,
 	MergeStrategySchema,
 	RepoConfigSchema,
 	RepoVisibilitySchema,
@@ -41,6 +42,12 @@ const OrgDefaultsSchema = v.strictObject({
 		dependabotSecurityUpdates: false,
 		secretScanning: true,
 		pushProtection: true,
+	}),
+	dependabot: v.optional(DependabotDefaultsSchema, {
+		interval: "weekly",
+		openPullRequestsLimit: 5,
+		labels: [],
+		assignees: [],
 	}),
 });
 

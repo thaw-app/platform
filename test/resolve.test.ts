@@ -21,6 +21,13 @@ const defaults = {
 		secretScanning: true,
 		pushProtection: true,
 	},
+	dependabot: {
+		interval: "weekly",
+		day: "monday",
+		openPullRequestsLimit: 10,
+		labels: ["dependencies"],
+		assignees: ["someone"],
+	},
 } satisfies OrgConfig["defaults"];
 
 const baseCtx = {
@@ -163,6 +170,77 @@ describe("buildRepoConfig", () => {
 			},
 		);
 		expect(Object.keys(built.labels ?? {})).toEqual(["global", "local"]);
+	});
+
+	it("renders a dependabot.yml for the ecosystems a repo lists", () => {
+		expect(buildRepoConfig(repo(), baseCtx).dependabotContent).toBe("");
+
+		const built = buildRepoConfig(
+			repo({ dependabot: ["bun", "github-actions"] }),
+			baseCtx,
+		);
+		expect(built.dependabotContent).toBe(
+			[
+				"# Synced from thaw-app/platform. Edit config/repos.yaml there.",
+				"version: 2",
+				"updates:",
+				'  - package-ecosystem: "bun"',
+				'    directory: "/"',
+				"    schedule:",
+				'      interval: "weekly"',
+				'      day: "monday"',
+				"    open-pull-requests-limit: 10",
+				"    labels:",
+				'      - "dependencies"',
+				"    assignees:",
+				'      - "someone"',
+				"    groups:",
+				"      bun:",
+				"        patterns:",
+				'          - "*"',
+				"        update-types:",
+				'          - "minor"',
+				'          - "patch"',
+				"",
+				'  - package-ecosystem: "github-actions"',
+				'    directory: "/"',
+				"    schedule:",
+				'      interval: "weekly"',
+				'      day: "monday"',
+				"    open-pull-requests-limit: 10",
+				"    labels:",
+				'      - "dependencies"',
+				"    assignees:",
+				'      - "someone"',
+				"    groups:",
+				"      github-actions:",
+				"        patterns:",
+				'          - "*"',
+				"        update-types:",
+				'          - "minor"',
+				'          - "patch"',
+				"",
+			].join("\n"),
+		);
+	});
+
+	it("leaves out the day, labels and assignees the defaults do not set", () => {
+		const built = buildRepoConfig(repo({ dependabot: ["npm"] }), {
+			...baseCtx,
+			defaults: {
+				...defaults,
+				dependabot: {
+					interval: "monthly",
+					openPullRequestsLimit: 5,
+					labels: [],
+					assignees: [],
+				},
+			},
+		});
+		expect(built.dependabotContent).not.toContain("day:");
+		expect(built.dependabotContent).not.toContain("labels:");
+		expect(built.dependabotContent).not.toContain("assignees:");
+		expect(built.dependabotContent).toContain('interval: "monthly"');
 	});
 
 	it("bare repos skip org labels and CODEOWNERS, and keep their rulesets", () => {

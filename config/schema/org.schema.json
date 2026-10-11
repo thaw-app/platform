@@ -85,6 +85,56 @@
 						"secretScanning": true,
 						"pushProtection": true
 					}
+				},
+				"dependabot": {
+					"type": "object",
+					"properties": {
+						"interval": {
+							"enum": ["daily", "weekly", "monthly"],
+							"type": "string"
+						},
+						"day": {
+							"enum": [
+								"monday",
+								"tuesday",
+								"wednesday",
+								"thursday",
+								"friday",
+								"saturday",
+								"sunday"
+							],
+							"type": "string"
+						},
+						"openPullRequestsLimit": {
+							"type": "integer",
+							"minimum": 0
+						},
+						"labels": {
+							"type": "array",
+							"items": {
+								"type": "string"
+							}
+						},
+						"assignees": {
+							"type": "array",
+							"items": {
+								"type": "string"
+							}
+						}
+					},
+					"required": [
+						"interval",
+						"openPullRequestsLimit",
+						"labels",
+						"assignees"
+					],
+					"additionalProperties": false,
+					"default": {
+						"interval": "weekly",
+						"openPullRequestsLimit": 5,
+						"labels": [],
+						"assignees": []
+					}
 				}
 			},
 			"required": [

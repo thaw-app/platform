@@ -12,6 +12,8 @@ function organizationRulesetStatusChecks(
 	ruleset: RulesetConfig,
 ): github.types.input.OrganizationRulesetRulesRequiredStatusChecks | undefined {
 	const checks = ruleset.rules.requiredStatusChecks;
+	// acceptAnyOf has no org-level form; assertOrgRulesetsSupported refuses it
+	// before any resource is created.
 	if (!checks?.enabled || !checks.requiredChecks?.length) return undefined;
 
 	return {
@@ -154,12 +156,10 @@ export function createRepositoryRulesets(
 	opts?: pulumi.ResourceOptions,
 ): github.RepositoryRuleset[] {
 	return rulesets.map((r) => {
-		const refIncludes = r.conditions.refName.includes.map(
-			normalizeRulesetRefName,
-		);
-		const refExcludes = (r.conditions.refName.excludes ?? []).map(
-			normalizeRulesetRefName,
-		);
+		const refName = (pattern: string) =>
+			normalizeRulesetRefName(pattern, r.target);
+		const refIncludes = r.conditions.refName.includes.map(refName);
+		const refExcludes = (r.conditions.refName.excludes ?? []).map(refName);
 
 		return new github.RepositoryRuleset(
 			`${resourcePrefix}-rs-${r.id}`,

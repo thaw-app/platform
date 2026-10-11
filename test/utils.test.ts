@@ -1,11 +1,59 @@
 import { describe, expect, it } from "bun:test";
 import {
 	assertReviewerTeamsCreatable,
+	branchPatternCovers,
 	normalizeActors,
 	normalizeBranchPattern,
 	normalizeRulesetRefName,
 } from "@/setup";
 import type { RepoConfig } from "@/types";
+
+describe("branchPatternCovers", () => {
+	const covers = (pattern: string, branch = "main") =>
+		branchPatternCovers(pattern, branch, "main");
+
+	it("matches the names GitHub's special tokens stand for", () => {
+		expect(covers("~ALL")).toBe(true);
+		expect(covers("~DEFAULT_BRANCH")).toBe(true);
+		expect(covers("~DEFAULT_BRANCH", "release")).toBe(false);
+		expect(covers("refs/heads/main")).toBe(true);
+	});
+
+	it("keeps * and ? within one path segment", () => {
+		expect(covers("ma*")).toBe(true);
+		expect(covers("*")).toBe(true);
+		expect(covers("mai?")).toBe(true);
+		expect(covers("*", "release/v1")).toBe(false);
+		expect(covers("release/*", "release/v1")).toBe(true);
+		expect(covers("release/*")).toBe(false);
+	});
+
+	it("lets ** span segments, including none", () => {
+		expect(covers("**/*")).toBe(true);
+		expect(covers("**")).toBe(true);
+		expect(covers("**/main")).toBe(true);
+		expect(covers("**/*", "release/v1")).toBe(true);
+		expect(covers("release/**", "release/v1/hotfix")).toBe(true);
+		expect(covers("release/**")).toBe(false);
+	});
+
+	it("reads character classes", () => {
+		expect(covers("m[ai]in")).toBe(true);
+		expect(covers("m[!a]in")).toBe(false);
+		expect(covers("[a-m]ain")).toBe(true);
+		expect(covers("m[xyz]in")).toBe(false);
+	});
+
+	it("takes other punctuation literally", () => {
+		expect(covers("ma.n")).toBe(false);
+		expect(covers("v1.0", "v1.0")).toBe(true);
+		expect(covers("v1.0", "v1x0")).toBe(false);
+		expect(covers("a+b", "a+b")).toBe(true);
+		expect(covers(String.raw`ma\*n`, "ma*n")).toBe(true);
+		expect(covers(String.raw`ma\*n`)).toBe(false);
+		expect(covers("ma[in", "ma[in")).toBe(true);
+	});
+});
 
 describe("normalizeBranchPattern", () => {
 	it("expands ~DEFAULT_BRANCH to the default branch", () => {
@@ -38,6 +86,13 @@ describe("normalizeRulesetRefName", () => {
 	it("prefixes bare branch patterns for the ruleset API", () => {
 		expect(normalizeRulesetRefName("main")).toBe("refs/heads/main");
 		expect(normalizeRulesetRefName("release/*")).toBe("refs/heads/release/*");
+	});
+
+	it("prefixes bare patterns as tags in a tag ruleset", () => {
+		expect(normalizeRulesetRefName("v*", "tag")).toBe("refs/tags/v*");
+		expect(normalizeRulesetRefName("refs/tags/v1", "tag")).toBe("refs/tags/v1");
+		expect(normalizeRulesetRefName("~ALL", "tag")).toBe("~ALL");
+		expect(normalizeRulesetRefName("main", "push")).toBe("refs/heads/main");
 	});
 });
 

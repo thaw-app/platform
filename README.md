@@ -86,7 +86,7 @@ Source: [`docs/architecture.mmd`](docs/architecture.mmd). Edit the `.mmd` file a
 
 1. **Load and validate.** [`src/setup/loader.ts`](src/setup/loader.ts) parses each YAML file against a [valibot](https://valibot.dev/) schema in [`src/types/`](src/types/), merges member records from [`config/members.yaml`](config/members.yaml) into team definitions ([`src/setup/members.ts`](src/setup/members.ts)), then runs cross-reference checks ([`src/setup/validate.ts`](src/setup/validate.ts)): unknown team/repo references, branch patterns claimed by multiple rulesets, and labels defined in multiple groups.
 2. **Resolve.** [`src/setup/resolve.ts`](src/setup/resolve.ts) fills each repo from org-wide `defaults` in [`config/org.yaml`](config/org.yaml) and translates config into Pulumi inputs.
-3. **Provision.** [`src/org.ts`](src/org.ts) creates teams (when `enableTeams` is on), org rulesets (when `enableRulesets` is on), and one `OrgRepository` component ([`src/resources/repo.ts`](src/resources/repo.ts)) per entry in `repos.yaml`. Each component owns that repo's team access, repository rulesets (when org rulesets are off), optional branch-protection overrides, deployment environments, labels, and synced `.github/CODEOWNERS`.
+3. **Provision.** [`src/org.ts`](src/org.ts) creates teams (when `enableTeams` is on), org rulesets (when `enableRulesets` is on), and one `OrgRepository` component ([`src/resources/repo.ts`](src/resources/repo.ts)) per entry in `repos.yaml`. Each component owns that repo's team access, repository rulesets (when org rulesets are off), optional branch-protection overrides, deployment environments, labels, synced `.github/CODEOWNERS`, and a synced `.github/dependabot.yml` for repos that ask for one.
 
 Schemas use `strictObject`, so an unknown or misspelled YAML key fails the run instead of being silently ignored.
 
@@ -210,6 +210,8 @@ Set `autoInit: true` when Pulumi should create an empty GitHub repo (GitHub seed
 **Change CODEOWNERS.** Edit `config/codeowners.yaml`, or set `codeowners` on a repo in `config/repos.yaml` to give that repo its own content. Pulumi commits the file to each repo's default branch, which the reviewed ruleset tier does not allow. For the repos in that tier, open a pull request in each with the same content first; Pulumi then finds the file already matching and writes nothing.
 
 **Add a label.** Add it under any group in `config/labels.yaml`. Label names must be unique across groups.
+
+**Give a repo a Dependabot config.** List its ecosystems under `dependabot` in `config/repos.yaml`. The schedule, labels and assignees come from `defaults.dependabot` in `config/org.yaml`, so every synced file behaves the same way. Like CODEOWNERS, the file is committed to the default branch, so validation rejects it on a repo in the reviewed ruleset tier. Add the file in those repos by pull request.
 
 ## Scripts
 

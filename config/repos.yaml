@@ -4,6 +4,9 @@
 # Out of scope (manual admin, not listed here): Thaw, prk-bin, shieldcn,
 # AXSwift6, and platform itself.
 #
+# `adopt: true` imports an existing repo on its first apply and is removed
+# afterwards; every repo below is already imported.
+#
 # Branch enforcement is defined in config/rulesets.yaml, which lists the repos
 # each ruleset is on. A repo on a ruleset that requires status checks names its
 # own CI checks here (requiredStatusChecks).
@@ -22,6 +25,9 @@ repos:
       - squash
     deleteBranchOnMerge: true
     autoInit: true
+    dependabot:
+      - bun
+      - github-actions
 
   - name: updates
     description: >-
@@ -61,7 +67,6 @@ repos:
   - name: brand-assets
     description: "Shared Thaw brand assets: headers, icons, packaging art, marketing."
     visibility: public
-    adopt: true
     bare: true
     hasIssues: false
     hasWiki: false
@@ -80,7 +85,6 @@ repos:
       - squash
     deleteBranchOnMerge: true
     autoInit: false
-    adopt: true
 
   - name: raycast-extension
     description: Control Thaw directly from Raycast. Toggle visibility sections, search menu bar items, and open settings without touching your mouse.
@@ -94,7 +98,6 @@ repos:
       - squash
     deleteBranchOnMerge: true
     autoInit: false
-    adopt: true
     requiredStatusChecks:
       - ci
 
@@ -104,7 +107,6 @@ repos:
   - name: PlatformRuntimeKit
     description: Proprietary Swift package providing current-platform menu bar runtime support for Thaw.
     visibility: private
-    adopt: true
     bare: true
     autoInit: false
 
@@ -149,13 +151,10 @@ repos:
       - squash
     deleteBranchOnMerge: false
     autoInit: false
-    adopt: true
     bare: true
     hasWiki: true
     hasProjects: true
     hasDiscussions: true
-    security:
-      dependabotSecurityUpdates: true
     codeowners: |
       * @diazdesandi
     branchProtection:
