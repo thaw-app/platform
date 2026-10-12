@@ -64,23 +64,21 @@ export function createCodeowners(
 const DEPENDABOT_FILE = ".github/dependabot.yml";
 const DEPENDABOT_MESSAGE = "chore: sync dependabot.yml from org config";
 
-// Whether the repo's default branch already holds this content. A file that
-// cannot be read, or a repo that does not exist yet, counts as not matching.
+// Whether the repo's default branch already holds this content. The provider
+// reads a missing file as empty, which does not match. Any other failure
+// stops the run: answering "no" to it would open a pull request that offers
+// what the branch already has.
 export async function defaultBranchHasDependabot(
 	repository: string,
 	defaultBranch: string,
 	content: string,
 ): Promise<boolean> {
-	try {
-		const current = await github.getRepositoryFile({
-			repository,
-			branch: defaultBranch,
-			file: DEPENDABOT_FILE,
-		});
-		return (current.content ?? "").trim() === content.trim();
-	} catch {
-		return false;
-	}
+	const current = await github.getRepositoryFile({
+		repository,
+		branch: defaultBranch,
+		file: DEPENDABOT_FILE,
+	});
+	return (current.content ?? "").trim() === content.trim();
 }
 
 // For a default branch that refuses direct commits: the file goes on a branch
