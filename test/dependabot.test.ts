@@ -17,6 +17,7 @@ type Rendered = {
 			schedule: { interval: string; day?: string };
 			labels?: string[];
 			assignees?: string[];
+			"open-pull-requests-limit"?: number;
 		}
 	>;
 	updates: {
@@ -27,6 +28,7 @@ type Rendered = {
 		directories?: string[];
 		schedule?: unknown;
 		groups?: unknown;
+		"open-pull-requests-limit"?: number;
 	}[];
 };
 
@@ -74,11 +76,18 @@ describe("renderDependabot", () => {
 			interval: "weekly",
 			day: "monday",
 		});
+		expect(
+			parsed["multi-ecosystem-groups"].dependencies?.[
+				"open-pull-requests-limit"
+			],
+		).toBe(10);
 		for (const update of parsed.updates) {
 			expect(update["multi-ecosystem-group"]).toBe("dependencies");
 			// Every dependency takes part, a major bump included.
 			expect(update.patterns).toEqual(["*"]);
 			expect(update.schedule).toBeUndefined();
+			// Dependabot rejects the file when an update in a group sets it.
+			expect(update["open-pull-requests-limit"]).toBeUndefined();
 			expect(update.groups).toBeUndefined();
 		}
 	});
