@@ -3,6 +3,7 @@ import {
 	createRulesets,
 	createTeamMemberships,
 	createTeams,
+	defaultBranchHasDependabot,
 	OrgRepository,
 } from "@/resources";
 import {
@@ -42,6 +43,21 @@ export default async function setupOrg() {
 			rulesets,
 			provisionRepoRulesets: !enableRulesets,
 		});
-		new OrgRepository(resolved.pulumiName, resolved, teamResources); // NOSONAR
+		// A pull request is opened only while the default branch differs, so
+		// one that has been merged is not opened again.
+		const merged =
+			resolved.dependabotByPullRequest &&
+			resolved.dependabotContent !== "" &&
+			(await defaultBranchHasDependabot(
+				resolved.name,
+				resolved.defaultBranch,
+				resolved.dependabotContent,
+			));
+		new OrgRepository(
+			// NOSONAR
+			resolved.pulumiName,
+			merged ? { ...resolved, dependabotContent: "" } : resolved,
+			teamResources,
+		);
 	}
 }

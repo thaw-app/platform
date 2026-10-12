@@ -100,6 +100,9 @@ repos:
     autoInit: false
     requiredStatusChecks:
       - ci
+    dependabot:
+      - npm
+      - github-actions
 
   # Private, proprietary source: bare, so no org labels or CODEOWNERS. Rulesets
   # are unavailable for private repos on GitHub Free, so no ruleset in
@@ -139,6 +142,13 @@ repos:
     # workflow or action file changes, so it cannot be required.
     requiredStatusChecks:
       - test
+    dependabot:
+      - bun
+      # The workflows, and the actions each composite action calls.
+      - ecosystem: github-actions
+        directories:
+          - "/"
+          - "/actions/*"
 
   # Floe keeps its own labels (bare) and has one code owner. Its main branch is
   # protected the way Thaw's development branch is, with Floe's own check names:

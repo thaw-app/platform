@@ -3,7 +3,11 @@ import type {
 	RepoConfig,
 	RulesetConfig,
 } from "@/types";
-import { globMatches, normalizeBranchPattern } from "./utils";
+import {
+	branchPatternCovers,
+	globMatches,
+	normalizeBranchPattern,
+} from "./utils";
 
 type RepoCondition = { includes: string[]; excludes: string[] };
 
@@ -30,6 +34,28 @@ export function rulesetsForRepo(
 ): RulesetConfig[] {
 	return rulesets.filter(
 		(r) => r.enforcement !== "disabled" && rulesetAppliesToRepo(r, repoName),
+	);
+}
+
+// Whether a commit pushed straight to the repo's default branch would be
+// refused. The patterns are read the way GitHub reads them, and a ruleset's
+// excludes are honoured, so one on release/* does not count and one on ma* or
+// **/* does.
+export function defaultBranchRequiresPullRequest(
+	repoName: string,
+	rulesets: RulesetConfig[],
+	defaultBranch: string,
+): boolean {
+	const matchesDefaultBranch = (ref: string) =>
+		branchPatternCovers(ref, defaultBranch, defaultBranch);
+	return rulesets.some(
+		(r) =>
+			r.enforcement === "active" &&
+			r.target === "branch" &&
+			r.rules.pullRequest !== undefined &&
+			r.conditions.refName.includes.some(matchesDefaultBranch) &&
+			!(r.conditions.refName.excludes ?? []).some(matchesDefaultBranch) &&
+			rulesetAppliesToRepo(r, repoName),
 	);
 }
 

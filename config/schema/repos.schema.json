@@ -107,16 +107,46 @@
 					"dependabot": {
 						"type": "array",
 						"items": {
-							"enum": [
-								"bun",
-								"npm",
-								"github-actions",
-								"swift",
-								"bundler",
-								"pip",
-								"docker"
-							],
-							"type": "string"
+							"anyOf": [
+								{
+									"enum": [
+										"bun",
+										"npm",
+										"github-actions",
+										"swift",
+										"bundler",
+										"pip",
+										"docker"
+									],
+									"type": "string"
+								},
+								{
+									"type": "object",
+									"properties": {
+										"ecosystem": {
+											"enum": [
+												"bun",
+												"npm",
+												"github-actions",
+												"swift",
+												"bundler",
+												"pip",
+												"docker"
+											],
+											"type": "string"
+										},
+										"directories": {
+											"type": "array",
+											"items": {
+												"type": "string"
+											},
+											"minItems": 1
+										}
+									},
+									"required": ["ecosystem", "directories"],
+									"additionalProperties": false
+								}
+							]
 						}
 					},
 					"requiredStatusChecks": {
