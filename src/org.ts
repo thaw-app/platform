@@ -6,6 +6,7 @@ import {
 	OrgRepository,
 } from "@/resources";
 import {
+	assertOrgRulesetsSupported,
 	assertReviewerTeamsCreatable,
 	buildRepoConfig,
 	initConfig,
@@ -22,6 +23,7 @@ export default async function setupOrg() {
 	const enableRulesets = pulumiConfig.getBoolean("enableRulesets") ?? true;
 
 	assertReviewerTeamsCreatable(repos, enableTeams);
+	if (enableRulesets) assertOrgRulesetsSupported(repos, rulesets);
 
 	const teamResources = enableTeams ? createTeams(teams) : {};
 	if (enableTeams) createTeamMemberships(teams, teamResources);

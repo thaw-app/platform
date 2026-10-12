@@ -82,6 +82,9 @@ development:
   test:
     color: "9ad857"
     description: "Test additions or updates"
+  dependencies:
+    color: "0366d6"
+    description: "Updates a dependency"
   chore:
     color: "BDC3C7"
     description: "Housekeeping, non-user-facing maintenance"

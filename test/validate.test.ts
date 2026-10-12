@@ -21,6 +21,13 @@ const defaults = {
 		secretScanning: true,
 		pushProtection: true,
 	},
+	dependabot: {
+		interval: "weekly",
+		day: "monday",
+		openPullRequestsLimit: 10,
+		labels: ["dependencies"],
+		assignees: ["someone"],
+	},
 } satisfies OrgConfig["defaults"];
 
 const baseConfig = (): InfraConfig => ({
@@ -85,6 +92,19 @@ describe("validateCrossRefs", () => {
 		const issues = validateCrossRefs(cfg, {});
 		expect(issues).toHaveLength(1);
 		expect(issues[0]?.message).toMatch(/unknown team "ghosts"/);
+	});
+
+	it("flags a team listed twice for one repo, whatever the permissions", () => {
+		const cfg = baseConfig();
+		cfg.teams.repoAccess = {
+			r: [
+				{ team: "maintainers", permission: "admin" },
+				{ team: "maintainers", permission: "push" },
+			],
+		};
+		expect(validateCrossRefs(cfg, {}).map((i) => [i.path, i.message])).toEqual([
+			["teams.repoAccess.r", 'team "maintainers" is listed more than once'],
+		]);
 	});
 
 	it("flags environment reviewers referencing an unknown team", () => {
@@ -303,6 +323,75 @@ describe("validateCrossRefs", () => {
 				"error",
 			],
 			["repos.s.security", "pushProtection needs secretScanning", "error"],
+		]);
+	});
+
+	it("rejects a synced dependabot.yml on a repo whose ruleset requires pull requests", () => {
+		const cfg = baseConfig();
+		cfg.repos = [
+			{ name: "reviewed", description: "d", dependabot: ["bun"] },
+			{ name: "open", description: "d", dependabot: ["bun"] },
+			{ name: "plain", description: "d" },
+			{ name: "release-only", description: "d", dependabot: ["bun"] },
+			{ name: "wildcard", description: "d", dependabot: ["bun"] },
+			{ name: "excluded", description: "d", dependabot: ["bun"] },
+			{ name: "every-depth", description: "d", dependabot: ["bun"] },
+		];
+		const basic = mainRuleset("basic");
+		const { pullRequest: _none, ...basicRules } = basic.rules;
+		cfg.rulesets = [
+			{
+				...mainRuleset("reviewed"),
+				conditions: {
+					refName: { includes: ["~DEFAULT_BRANCH"] },
+					repositoryName: { includes: ["reviewed", "plain"], excludes: [] },
+				},
+			},
+			{
+				...basic,
+				rules: basicRules,
+				conditions: {
+					refName: { includes: ["~DEFAULT_BRANCH"] },
+					repositoryName: { includes: ["open"], excludes: [] },
+				},
+			},
+			// Requires pull requests, but not on the branch the file is written to.
+			{
+				...mainRuleset("releases"),
+				conditions: {
+					refName: { includes: ["release/*"] },
+					repositoryName: { includes: ["release-only"], excludes: [] },
+				},
+			},
+			// A pattern that covers the default branch without naming it.
+			{
+				...mainRuleset("wildcard"),
+				conditions: {
+					refName: { includes: ["ma*"] },
+					repositoryName: { includes: ["wildcard"], excludes: [] },
+				},
+			},
+			// Covers every branch but the default one.
+			{
+				...mainRuleset("excluded"),
+				conditions: {
+					refName: { includes: ["~ALL"], excludes: ["~DEFAULT_BRANCH"] },
+					repositoryName: { includes: ["excluded"], excludes: [] },
+				},
+			},
+			// GitHub reads this as every branch, at any depth.
+			{
+				...mainRuleset("every-depth"),
+				conditions: {
+					refName: { includes: ["**/*"] },
+					repositoryName: { includes: ["every-depth"], excludes: [] },
+				},
+			},
+		];
+		expect(validateCrossRefs(cfg, {}).map((i) => i.path)).toEqual([
+			"repos.reviewed.dependabot",
+			"repos.wildcard.dependabot",
+			"repos.every-depth.dependabot",
 		]);
 	});
 });

@@ -44,6 +44,38 @@ describe("LabelDefinitionSchema", () => {
 });
 
 describe("OrgConfigSchema", () => {
+	it("rejects a Dependabot day or limit that Dependabot would refuse", () => {
+		const withDependabot = (dependabot: Record<string, unknown>) =>
+			v.safeParse(OrgConfigSchema, {
+				owner: "acme",
+				organization: "acme-org",
+				defaults: {
+					visibility: "public",
+					defaultBranch: "main",
+					deleteBranchOnMerge: true,
+					mergeStrategies: ["squash"],
+					features: {
+						issues: true,
+						wiki: false,
+						projects: false,
+						discussions: false,
+					},
+					dependabot: {
+						interval: "weekly",
+						openPullRequestsLimit: 10,
+						labels: [],
+						assignees: [],
+						...dependabot,
+					},
+				},
+			}).success;
+
+		expect(withDependabot({ day: "monday" })).toBe(true);
+		expect(withDependabot({ day: "someday" })).toBe(false);
+		expect(withDependabot({ openPullRequestsLimit: 2.5 })).toBe(false);
+		expect(withDependabot({ openPullRequestsLimit: -1 })).toBe(false);
+	});
+
 	it("applies squash-merge and security defaults when omitted", () => {
 		const r = v.safeParse(OrgConfigSchema, {
 			owner: "acme",

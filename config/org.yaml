@@ -19,6 +19,16 @@ defaults:
   # does not offer them on private ones.
   security:
     dependabotAlerts: true
-    dependabotSecurityUpdates: false
+    dependabotSecurityUpdates: true
     secretScanning: true
     pushProtection: true
+  # How a synced .github/dependabot.yml behaves, matching Thaw's. A repo opts
+  # in by listing its ecosystems under `dependabot` in repos.yaml.
+  dependabot:
+    interval: weekly
+    day: monday
+    openPullRequestsLimit: 10
+    labels:
+      - dependencies
+    assignees:
+      - diazdesandi

@@ -6,8 +6,8 @@ import {
 } from "@pulumi/pulumi";
 import type { ResolvedRepoConfig, TeamAccess, TeamResourceMap } from "@/types";
 import { createBranchProtection } from "./branch";
-import { createCodeowners } from "./codeowners";
 import { createEnvironments } from "./environments";
+import { createCodeowners, createDependabot } from "./files";
 import { createLabels } from "./labels";
 import { createRepositoryRulesets } from "./rulesets";
 
@@ -22,6 +22,7 @@ type ActiveRepoContext = {
 	security: ResolvedRepoConfig["security"];
 	defaultBranch: string;
 	codeownersContent: string;
+	dependabotContent: string;
 	teamResources: TeamResourceMap;
 };
 
@@ -159,6 +160,17 @@ function provisionActiveRepoResources(
 			dependsOn: [ctx.repo],
 		},
 	);
+
+	createDependabot(
+		ctx.resourcePrefix,
+		ctx.repo,
+		ctx.defaultBranch,
+		ctx.dependabotContent,
+		{
+			parent,
+			dependsOn: [ctx.repo],
+		},
+	);
 }
 
 export default class OrgRepository extends ComponentResource {
@@ -195,6 +207,7 @@ export default class OrgRepository extends ComponentResource {
 			squashMergeCommitMessage,
 			defaultBranch,
 			codeownersContent,
+			dependabotContent,
 		} = config;
 
 		const allowSquashMerge = mergeStrategies.includes("squash");
@@ -249,6 +262,7 @@ export default class OrgRepository extends ComponentResource {
 				security,
 				defaultBranch,
 				codeownersContent,
+				dependabotContent,
 				teamResources,
 			});
 		}

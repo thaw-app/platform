@@ -1,3 +1,4 @@
+export * from "./dependabot";
 export * from "./loader";
 export * from "./resolve";
 export * from "./rulesets";

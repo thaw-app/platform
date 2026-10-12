@@ -34,6 +34,41 @@ export const SecuritySchema = v.strictObject({
 
 export type SecurityConfig = v.InferOutput<typeof SecuritySchema>;
 
+export const DependabotEcosystemSchema = v.picklist([
+	"bun",
+	"npm",
+	"github-actions",
+	"swift",
+	"bundler",
+	"pip",
+	"docker",
+]);
+
+// How every synced .github/dependabot.yml schedules, labels and assigns its
+// pull requests. A repo only chooses its ecosystems.
+export const DependabotDefaultsSchema = v.strictObject({
+	interval: v.picklist(["daily", "weekly", "monthly"]),
+	day: v.optional(
+		v.picklist([
+			"monday",
+			"tuesday",
+			"wednesday",
+			"thursday",
+			"friday",
+			"saturday",
+			"sunday",
+		]),
+	),
+	openPullRequestsLimit: v.pipe(v.number(), v.integer(), v.minValue(0)),
+	labels: v.array(v.string()),
+	assignees: v.array(v.string()),
+});
+
+export type DependabotDefaults = v.InferOutput<typeof DependabotDefaultsSchema>;
+export type DependabotEcosystem = v.InferOutput<
+	typeof DependabotEcosystemSchema
+>;
+
 // Branch protection mirrors BranchProtectionArgs from Pulumi, so it needs no custom schema.
 // We only validate the fields users can set in YAML; Pulumi owns the rest.
 const BranchProtectionSchema = v.strictObject({
@@ -85,6 +120,9 @@ export const RepoConfigSchema = v.pipe(
 		// CODEOWNERS content for this repo, in place of the org template. A
 		// bare repo gets no CODEOWNERS unless it sets this.
 		codeowners: v.optional(v.string()),
+		// Ecosystems for a synced .github/dependabot.yml. A repo that sets none
+		// keeps whatever file it has.
+		dependabot: v.optional(v.array(DependabotEcosystemSchema)),
 		// The checks this repo's CI reports. A ruleset on the repo that requires
 		// status checks requires these, since job names differ per repo.
 		requiredStatusChecks: v.optional(v.array(v.string())),
@@ -143,6 +181,7 @@ export interface ResolvedRepoConfig
 	squashMergeCommitMessage: SquashMergeCommitMessage;
 	defaultBranch: string;
 	codeownersContent: string;
+	dependabotContent: string;
 	pulumiName: string;
 	organization: string;
 }

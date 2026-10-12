@@ -3,7 +3,7 @@ import type {
 	RepoConfig,
 	RulesetConfig,
 } from "@/types";
-import { normalizeBranchPattern } from "./utils";
+import { globMatches, normalizeBranchPattern } from "./utils";
 
 type RepoCondition = { includes: string[]; excludes: string[] };
 
@@ -19,10 +19,9 @@ export function rulesetAppliesToRepo(
 	repoName: string,
 ): boolean {
 	const cond = repoCondition(r);
-	if (cond.excludes.includes(repoName)) return false;
-	if (cond.includes.includes("~ALL") || cond.includes.includes(repoName))
-		return true;
-	return cond.includes.some((p) => p.includes("*"));
+	const matches = (pattern: string) =>
+		pattern === "~ALL" || globMatches(pattern, repoName);
+	return cond.includes.some(matches) && !cond.excludes.some(matches);
 }
 
 export function rulesetsForRepo(
@@ -54,6 +53,39 @@ export function withRepoStatusChecks(
 			},
 		},
 	};
+}
+
+/**
+ * An org ruleset is one resource for every repo it covers, so it cannot carry
+ * a repo's own check names, and it has no form of acceptAnyOf. Provisioning
+ * either would leave those repos with no required checks and no error.
+ * Surface every offender at once, before any resource is created.
+ */
+export function assertOrgRulesetsSupported(
+	repos: RepoConfig[],
+	rulesets: RulesetConfig[],
+): void {
+	const requiringChecks = rulesets.filter(
+		(r) => r.enforcement !== "disabled" && r.rules.requiredStatusChecks.enabled,
+	);
+	const offenders = [
+		...requiringChecks
+			.filter((r) => !r.rules.requiredStatusChecks.requiredChecks?.length)
+			.map((r) => `rulesets.${r.id}.rules.requiredStatusChecks.acceptAnyOf`),
+		...repos
+			.filter(
+				(repo) =>
+					repo.requiredStatusChecks?.length &&
+					requiringChecks.some((r) => rulesetAppliesToRepo(r, repo.name)),
+			)
+			.map((repo) => `repos.${repo.name}.requiredStatusChecks`),
+	];
+	if (offenders.length > 0) {
+		const lines = offenders.map((o) => `- ${o}`).join("\n");
+		throw new Error(
+			`enableRulesets is true, but org rulesets cannot enforce these status checks:\n${lines}`,
+		);
+	}
 }
 
 export function mergeRepoBranchProtection(

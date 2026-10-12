@@ -79,6 +79,7 @@ const resolvedRepo = (
 	squashMergeCommitMessage: "COMMIT_MESSAGES",
 	defaultBranch: "main",
 	codeownersContent: "* @acme-org/maintainers\n",
+	dependabotContent: "",
 	...overrides,
 });
 
@@ -282,6 +283,22 @@ describe("OrgRepository", () => {
 		expect("autocreateBranch" in codeowners.inputs).toBe(false);
 	});
 
+	it("syncs dependabot.yml next to CODEOWNERS when the repo has one", async () => {
+		provisionOrgRepository(
+			"r",
+			resolvedRepo({ dependabotContent: "version: 2\nupdates: []\n" }),
+			{},
+		);
+		await settle();
+
+		const files = findByType("github:index/repositoryFile:RepositoryFile");
+		expect(files.map((f) => f.inputs.file)).toEqual([
+			".github/CODEOWNERS",
+			".github/dependabot.yml",
+		]);
+		expect(files.map((f) => f.name)).toEqual(["r-codeowners", "r-dependabot"]);
+	});
+
 	it("adopts an existing GitHub repository when adopt is true", async () => {
 		provisionOrgRepository(
 			"r",
@@ -395,6 +412,26 @@ it("asks for no pull request when the ruleset has no pull request rule", async (
 	expect(sent.copilotCodeReview).toBeUndefined();
 	expect(sent.requiredStatusChecks).toBeUndefined();
 	expect(sent.nonFastForward).toBe(true);
+});
+
+it("sends a tag ruleset's bare patterns as tag refs", async () => {
+	const repo = new github.Repository("r", { name: "r" });
+	await settle();
+	createRepositoryRulesets("website", repo, [
+		mainRuleset({
+			id: "tags",
+			target: "tag",
+			conditions: { refName: { includes: ["v*"], excludes: ["v0*"] } },
+		}),
+	]);
+	await settle();
+	const rs = first(
+		findByType("github:index/repositoryRuleset:RepositoryRuleset"),
+	);
+	expect((rs.inputs.conditions as { refName: unknown }).refName).toEqual({
+		includes: ["refs/tags/v*"],
+		excludes: ["refs/tags/v0*"],
+	});
 });
 
 it("passes bypassActors through to repository rulesets", async () => {

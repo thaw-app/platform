@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import {
+	assertOrgRulesetsSupported,
 	mergeRepoBranchProtection,
 	rulesetAppliesToRepo,
 	rulesetsForRepo,
@@ -58,6 +59,76 @@ describe("rulesetAppliesToRepo", () => {
 		});
 		expect(rulesetAppliesToRepo(ruleset, "website")).toBe(false);
 		expect(rulesetAppliesToRepo(ruleset, "org-ci")).toBe(true);
+	});
+
+	it("matches a wildcard include against the repo's name", () => {
+		const ruleset = mainRuleset({
+			conditions: {
+				refName: { includes: ["~DEFAULT_BRANCH"] },
+				repositoryName: { includes: ["release-*"], excludes: [] },
+			},
+		});
+		expect(rulesetAppliesToRepo(ruleset, "release-notes")).toBe(true);
+		expect(rulesetAppliesToRepo(ruleset, "website")).toBe(false);
+	});
+
+	it("matches a wildcard exclude against the repo's name", () => {
+		const ruleset = mainRuleset({
+			conditions: {
+				refName: { includes: ["~DEFAULT_BRANCH"] },
+				repositoryName: { includes: ["~ALL"], excludes: ["web*"] },
+			},
+		});
+		expect(rulesetAppliesToRepo(ruleset, "website")).toBe(false);
+		expect(rulesetAppliesToRepo(ruleset, "org-ci")).toBe(true);
+	});
+});
+
+describe("assertOrgRulesetsSupported", () => {
+	const repo = (overrides: Partial<RepoConfig> = {}): RepoConfig => ({
+		name: "website",
+		description: "d",
+		...overrides,
+	});
+	const namedChecks = () =>
+		mainRuleset({
+			rules: {
+				...defaultRules(),
+				requiredStatusChecks: {
+					enabled: true,
+					requiredChecks: [{ context: "ci" }],
+				},
+			},
+		});
+
+	it("accepts rulesets that name their required checks", () => {
+		expect(() =>
+			assertOrgRulesetsSupported([repo()], [namedChecks()]),
+		).not.toThrow();
+	});
+
+	it("refuses acceptAnyOf, which an org ruleset would drop", () => {
+		expect(() => assertOrgRulesetsSupported([repo()], [mainRuleset()])).toThrow(
+			/rulesets\.main-default\.rules\.requiredStatusChecks\.acceptAnyOf/,
+		);
+	});
+
+	it("refuses a repo's own check names, which an org ruleset cannot carry", () => {
+		expect(() =>
+			assertOrgRulesetsSupported(
+				[repo({ requiredStatusChecks: ["check"] })],
+				[namedChecks()],
+			),
+		).toThrow(/repos\.website\.requiredStatusChecks/);
+	});
+
+	it("ignores disabled rulesets", () => {
+		expect(() =>
+			assertOrgRulesetsSupported(
+				[repo()],
+				[mainRuleset({ enforcement: "disabled" })],
+			),
+		).not.toThrow();
 	});
 });
 

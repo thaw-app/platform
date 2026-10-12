@@ -7,6 +7,7 @@ import type {
 	TeamResourceMap,
 	TeamsConfig,
 } from "@/types";
+import { renderDependabot } from "./dependabot";
 import {
 	mergeRepoBranchProtection,
 	rulesetsForRepo,
@@ -128,6 +129,10 @@ export function buildRepoConfig(
 		defaultBranch: defaults.defaultBranch,
 		codeownersContent:
 			repo.codeowners ?? (repo.bare ? "" : ctx.codeownersContent),
+		dependabotContent: renderDependabot(
+			repo.dependabot ?? [],
+			defaults.dependabot,
+		),
 		pulumiName: repo.pulumiName ?? repo.name,
 		organization,
 	};

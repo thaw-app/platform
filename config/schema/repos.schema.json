@@ -104,6 +104,21 @@
 					"codeowners": {
 						"type": "string"
 					},
+					"dependabot": {
+						"type": "array",
+						"items": {
+							"enum": [
+								"bun",
+								"npm",
+								"github-actions",
+								"swift",
+								"bundler",
+								"pip",
+								"docker"
+							],
+							"type": "string"
+						}
+					},
 					"requiredStatusChecks": {
 						"type": "array",
 						"items": {
