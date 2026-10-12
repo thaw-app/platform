@@ -8,7 +8,7 @@ import type {
 } from "@/types";
 import { rulesetAppliesToRepo } from "./rulesets";
 import type { ValidationIssue } from "./types";
-import { branchPatternCovers, issue, normalizeBranchPattern } from "./utils";
+import { issue, normalizeBranchPattern } from "./utils";
 
 const compareStrings = (a: string, b: string) => a.localeCompare(b);
 
@@ -285,37 +285,6 @@ function validateLabelGroups(labelGroups: LabelGroups): ValidationIssue[] {
 		);
 }
 
-// Pulumi commits the file straight to the default branch. A ruleset that
-// requires pull requests rejects that commit and fails the whole apply.
-function validateDependabot(config: InfraConfig): ValidationIssue[] {
-	const defaultBranch = config.org.defaults.defaultBranch;
-	const matchesDefaultBranch = (ref: string) =>
-		branchPatternCovers(ref, defaultBranch, defaultBranch);
-	const coversDefaultBranch = (r: RulesetConfig) =>
-		r.conditions.refName.includes.some(matchesDefaultBranch) &&
-		!(r.conditions.refName.excludes ?? []).some(matchesDefaultBranch);
-	const requiringPullRequests = config.rulesets.filter(
-		(r) =>
-			r.enforcement === "active" &&
-			r.target === "branch" &&
-			r.rules.pullRequest &&
-			coversDefaultBranch(r),
-	);
-
-	return config.repos
-		.filter(
-			(repo) =>
-				repo.dependabot?.length &&
-				requiringPullRequests.some((r) => rulesetAppliesToRepo(r, repo.name)),
-		)
-		.map((repo) =>
-			issue(
-				`repos.${repo.name}.dependabot`,
-				"a ruleset on this repo requires pull requests, so the file cannot be synced; add it in the repo",
-			),
-		);
-}
-
 export function validateCrossRefs(
 	config: InfraConfig,
 	labelGroups: LabelGroups,
@@ -327,7 +296,6 @@ export function validateCrossRefs(
 		...validateRepoStatusChecks(config),
 		...validateRulesetBranchProtectionOverlap(config),
 		...validateSecurity(config),
-		...validateDependabot(config),
 		...validateLabelGroups(labelGroups),
 	];
 }

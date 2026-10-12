@@ -80,6 +80,7 @@ const resolvedRepo = (
 	defaultBranch: "main",
 	codeownersContent: "* @acme-org/maintainers\n",
 	dependabotContent: "",
+	dependabotByPullRequest: false,
 	...overrides,
 });
 
@@ -297,6 +298,52 @@ describe("OrgRepository", () => {
 			".github/dependabot.yml",
 		]);
 		expect(files.map((f) => f.name)).toEqual(["r-codeowners", "r-dependabot"]);
+	});
+
+	it("offers dependabot.yml as a pull request where the branch refuses commits", async () => {
+		provisionOrgRepository(
+			"r",
+			resolvedRepo({
+				codeownersContent: "",
+				dependabotContent: "version: 2\nupdates: []\n",
+				dependabotByPullRequest: true,
+			}),
+			{},
+		);
+		await settle();
+
+		const branch = first(findByType("github:index/branch:Branch"));
+		const file = first(
+			findByType("github:index/repositoryFile:RepositoryFile"),
+		);
+		const pullRequest = first(
+			findByType("github:index/repositoryPullRequest:RepositoryPullRequest"),
+		);
+		const head = branch.inputs.branch as string;
+
+		expect(head).toMatch(/^platform\/dependabot-[0-9a-f]{8}$/);
+		expect(branch.inputs.sourceBranch).toBe("main");
+		// The commit goes to the new branch, never to the default one.
+		expect(file.inputs.branch).toBe(head);
+		expect(file.inputs.file).toBe(".github/dependabot.yml");
+		expect(pullRequest.inputs.headRef).toBe(head);
+		expect(pullRequest.inputs.baseRef).toBe("main");
+	});
+
+	it("names the pull request's branch after the content, so a change opens a new one", async () => {
+		for (const dependabotContent of ["version: 2\n", "version: 2\n# b\n"]) {
+			provisionOrgRepository(
+				"r",
+				resolvedRepo({ dependabotContent, dependabotByPullRequest: true }),
+				{},
+			);
+		}
+		await settle();
+
+		const heads = findByType("github:index/branch:Branch").map(
+			(b) => b.inputs.branch,
+		);
+		expect(new Set(heads).size).toBe(2);
 	});
 
 	it("adopts an existing GitHub repository when adopt is true", async () => {

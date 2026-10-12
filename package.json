@@ -1,6 +1,7 @@
 {
 	"name": "platform",
 	"main": "index.ts",
+	"type": "module",
 	"scripts": {
 		"typecheck": "tsc --noEmit",
 		"check": "biome check",

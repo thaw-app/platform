@@ -9,6 +9,7 @@ import type {
 } from "@/types";
 import { renderDependabot } from "./dependabot";
 import {
+	defaultBranchRequiresPullRequest,
 	mergeRepoBranchProtection,
 	rulesetsForRepo,
 	withRepoStatusChecks,
@@ -132,6 +133,11 @@ export function buildRepoConfig(
 		dependabotContent: renderDependabot(
 			repo.dependabot ?? [],
 			defaults.dependabot,
+		),
+		dependabotByPullRequest: defaultBranchRequiresPullRequest(
+			repo.name,
+			rulesets,
+			defaults.defaultBranch,
 		),
 		pulumiName: repo.pulumiName ?? repo.name,
 		organization,

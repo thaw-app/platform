@@ -211,7 +211,7 @@ Set `autoInit: true` when Pulumi should create an empty GitHub repo (GitHub seed
 
 **Add a label.** Add it under any group in `config/labels.yaml`. Label names must be unique across groups.
 
-**Give a repo a Dependabot config.** List its ecosystems under `dependabot` in `config/repos.yaml`. The schedule, labels and assignees come from `defaults.dependabot` in `config/org.yaml`, so every synced file behaves the same way. Like CODEOWNERS, the file is committed to the default branch, so validation rejects it on a repo in the reviewed ruleset tier. Add the file in those repos by pull request.
+**Give a repo a Dependabot config.** List its ecosystems under `dependabot` in `config/repos.yaml`. The schedule, labels and assignees come from `defaults.dependabot` in `config/org.yaml`, so every synced file behaves the same way: all of a repo's ecosystems are in one group, and a week's version updates, major bumps included, arrive as one pull request. An ecosystem named alone is checked at the repo's root; one that keeps manifests elsewhere is written as `ecosystem` with its `directories`. The file is committed to the default branch. On a repo in the reviewed ruleset tier, where that commit would be refused, it is put on a branch named `platform/dependabot-<hash>` and offered as a pull request, which someone merges. Once the default branch holds the same content, no pull request is opened.
 
 ## Scripts
 

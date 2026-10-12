@@ -3,6 +3,7 @@ import {
 	createRulesets,
 	createTeamMemberships,
 	createTeams,
+	defaultBranchHasDependabot,
 	OrgRepository,
 } from "@/resources";
 import {
@@ -29,19 +30,35 @@ export default async function setupOrg() {
 	if (enableTeams) createTeamMemberships(teams, teamResources);
 	if (enableRulesets) createRulesets(rulesets);
 
-	for (const repo of repos) {
-		const teamAccess = enableTeams
-			? resolveTeamAccess(repo.name, teams.repoAccess, teamResources)
-			: [];
-		const resolved = buildRepoConfig(repo, {
-			defaults,
-			teamAccess,
-			labels,
-			organization,
-			codeownersContent,
-			rulesets,
-			provisionRepoRulesets: !enableRulesets,
-		});
+	const resolvedRepos = await Promise.all(
+		repos.map(async (repo) => {
+			const teamAccess = enableTeams
+				? resolveTeamAccess(repo.name, teams.repoAccess, teamResources)
+				: [];
+			const resolved = buildRepoConfig(repo, {
+				defaults,
+				teamAccess,
+				labels,
+				organization,
+				codeownersContent,
+				rulesets,
+				provisionRepoRulesets: !enableRulesets,
+			});
+			// A pull request is opened only while the default branch differs,
+			// so one that has been merged is not opened again.
+			const merged =
+				resolved.dependabotByPullRequest &&
+				resolved.dependabotContent !== "" &&
+				(await defaultBranchHasDependabot(
+					resolved.name,
+					resolved.defaultBranch,
+					resolved.dependabotContent,
+				));
+			return merged ? { ...resolved, dependabotContent: "" } : resolved;
+		}),
+	);
+
+	for (const resolved of resolvedRepos) {
 		new OrgRepository(resolved.pulumiName, resolved, teamResources); // NOSONAR
 	}
 }

@@ -23,6 +23,7 @@ type ActiveRepoContext = {
 	defaultBranch: string;
 	codeownersContent: string;
 	dependabotContent: string;
+	dependabotByPullRequest: boolean;
 	teamResources: TeamResourceMap;
 };
 
@@ -166,6 +167,7 @@ function provisionActiveRepoResources(
 		ctx.repo,
 		ctx.defaultBranch,
 		ctx.dependabotContent,
+		ctx.dependabotByPullRequest,
 		{
 			parent,
 			dependsOn: [ctx.repo],
@@ -208,6 +210,7 @@ export default class OrgRepository extends ComponentResource {
 			defaultBranch,
 			codeownersContent,
 			dependabotContent,
+			dependabotByPullRequest,
 		} = config;
 
 		const allowSquashMerge = mergeStrategies.includes("squash");
@@ -263,6 +266,7 @@ export default class OrgRepository extends ComponentResource {
 				defaultBranch,
 				codeownersContent,
 				dependabotContent,
+				dependabotByPullRequest,
 				teamResources,
 			});
 		}

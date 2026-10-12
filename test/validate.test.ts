@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { validateCrossRefs } from "@/setup";
+import { defaultBranchRequiresPullRequest, validateCrossRefs } from "@/setup";
 import type {
 	InfraConfig,
 	LabelGroups,
@@ -326,17 +326,8 @@ describe("validateCrossRefs", () => {
 		]);
 	});
 
-	it("rejects a synced dependabot.yml on a repo whose ruleset requires pull requests", () => {
+	it("knows which default branches take changes by pull request only", () => {
 		const cfg = baseConfig();
-		cfg.repos = [
-			{ name: "reviewed", description: "d", dependabot: ["bun"] },
-			{ name: "open", description: "d", dependabot: ["bun"] },
-			{ name: "plain", description: "d" },
-			{ name: "release-only", description: "d", dependabot: ["bun"] },
-			{ name: "wildcard", description: "d", dependabot: ["bun"] },
-			{ name: "excluded", description: "d", dependabot: ["bun"] },
-			{ name: "every-depth", description: "d", dependabot: ["bun"] },
-		];
 		const basic = mainRuleset("basic");
 		const { pullRequest: _none, ...basicRules } = basic.rules;
 		cfg.rulesets = [
@@ -388,10 +379,19 @@ describe("validateCrossRefs", () => {
 				},
 			},
 		];
-		expect(validateCrossRefs(cfg, {}).map((i) => i.path)).toEqual([
-			"repos.reviewed.dependabot",
-			"repos.wildcard.dependabot",
-			"repos.every-depth.dependabot",
-		]);
+		const names = [
+			"reviewed",
+			"open",
+			"release-only",
+			"wildcard",
+			"excluded",
+			"every-depth",
+			"unlisted",
+		];
+		expect(
+			names.filter((name) =>
+				defaultBranchRequiresPullRequest(name, cfg.rulesets, "main"),
+			),
+		).toEqual(["reviewed", "wildcard", "every-depth"]);
 	});
 });
