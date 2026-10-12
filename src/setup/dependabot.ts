@@ -28,6 +28,8 @@ export function renderDependabot(
 		...(defaults.day ? [`      day: "${defaults.day}"`] : []),
 		...list("labels", defaults.labels),
 		...list("assignees", defaults.assignees),
+		// Dependabot refuses the limit on an update that is in a group.
+		`    open-pull-requests-limit: ${defaults.openPullRequestsLimit}`,
 	].join("\n");
 
 	const blocks = entries.map((entry) =>
@@ -36,7 +38,6 @@ export function renderDependabot(
 			...(typeof entry === "string"
 				? ['    directory: "/"']
 				: list("directories", entry.directories)),
-			`    open-pull-requests-limit: ${defaults.openPullRequestsLimit}`,
 			"    patterns:",
 			'      - "*"',
 			`    multi-ecosystem-group: "${GROUP}"`,
