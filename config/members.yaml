@@ -22,9 +22,6 @@ members:
         role: maintainer
       - slug: maintainers
         role: maintainer
-  - username: alvst
-    teams:
-      - slug: contributors
   - username: camguillory
     teams:
       - slug: contributors

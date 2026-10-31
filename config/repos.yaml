@@ -104,6 +104,24 @@ repos:
       - npm
       - github-actions
 
+  # The SwiftUI controls Thaw and Floe share. Created empty; the checks it will
+  # require are named here, and it moves to the stricter ruleset, once it has CI.
+  - name: ThawUI
+    description: The SwiftUI controls and styles shared by Thaw and Floe.
+    visibility: public
+    topics:
+      - thaw
+      - macos
+      - swift
+      - swiftui
+    mergeStrategies:
+      - squash
+    deleteBranchOnMerge: true
+    autoInit: true
+    dependabot:
+      - swift
+      - github-actions
+
   # Private, proprietary source: bare, so no org labels or CODEOWNERS. Rulesets
   # are unavailable for private repos on GitHub Free, so no ruleset in
   # config/rulesets.yaml lists it.
@@ -156,10 +174,10 @@ repos:
   - name: Floe
     description: The open source launcher for macOS
     visibility: public
-    homepage: https://www.getthaw.app/docs/floe
+    homepage: https://www.getthaw.app/floe
     mergeStrategies:
       - squash
-    deleteBranchOnMerge: false
+    deleteBranchOnMerge: true
     autoInit: false
     bare: true
     hasWiki: true
