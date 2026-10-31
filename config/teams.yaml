@@ -58,6 +58,12 @@ repoAccess:
     - team: contributors
       permission: push
 
+  ThawUI:
+    - team: maintainers
+      permission: admin
+    - team: contributors
+      permission: push
+
   org-ci:
     - team: maintainers
       permission: admin

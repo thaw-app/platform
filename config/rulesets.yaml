@@ -95,6 +95,7 @@ rulesets:
           - homebrew-tap
           - brand-assets
           - menubarspawner
+          - ThawUI
           - .github
     rules:
       creation: false
