@@ -174,10 +174,10 @@ repos:
   - name: Floe
     description: The open source launcher for macOS
     visibility: public
-    homepage: https://www.getthaw.app/docs/floe
+    homepage: https://www.getthaw.app/floe
     mergeStrategies:
       - squash
-    deleteBranchOnMerge: false
+    deleteBranchOnMerge: true
     autoInit: false
     bare: true
     hasWiki: true
