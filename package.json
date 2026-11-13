@@ -11,7 +11,7 @@
 		"prepare": "husky"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.6.2",
+		"@biomejs/biome": "2.6.6",
 		"@commitlint/cli": "^21.2.4",
 		"@commitlint/config-conventional": "^21.2.4",
 		"@types/bun": "^1.4.4",
@@ -20,9 +20,9 @@
 		"typescript": "^6.0.3"
 	},
 	"dependencies": {
-		"@pulumi/github": "^6.15.0",
-		"@pulumi/pulumi": "^3.272.0",
-		"es-toolkit": "^1.52.0",
+		"@pulumi/github": "^6.15.1",
+		"@pulumi/pulumi": "^3.274.1",
+		"es-toolkit": "^1.53.2",
 		"valibot": "^1.5.0"
 	}
 }
