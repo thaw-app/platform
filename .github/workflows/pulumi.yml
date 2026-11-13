@@ -54,7 +54,7 @@ jobs:
           fi
 
       - name: Run Pulumi ${{ inputs.command }}
-        uses: pulumi/actions@8e5e406f4007fca908480587cb9893c07090f58d # v7.0.0
+        uses: pulumi/actions@96c7761824268174e0d2a4e8c7d75671eebd24a7 # v7.1.0
         env:
           # Override the job's default GITHUB_TOKEN: Actions' integration token
           # cannot read or manage org teams, labels, or cross-repo resources.
