@@ -167,6 +167,10 @@ repos:
         directories:
           - "/"
           - "/actions/*"
+      # The SwiftLint base of ghcr.io/thaw-app/ci-tools.
+      - ecosystem: docker
+        directories:
+          - "/images/ci-tools"
 
   # Floe keeps its own labels (bare) and has one code owner. Its main branch is
   # protected the way Thaw's development branch is, with Floe's own check names:
