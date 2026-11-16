@@ -130,6 +130,8 @@ export const RepoConfigSchema = v.pipe(
 		hasDiscussions: v.optional(v.boolean()),
 		security: v.optional(v.partial(SecuritySchema)),
 		labels: v.optional(LabelSetSchema),
+		// Org labels this repo leaves out, such as OS versions it never supported.
+		excludeLabels: v.optional(v.array(v.string())),
 		// CODEOWNERS content for this repo, in place of the org template. A
 		// bare repo gets no CODEOWNERS unless it sets this.
 		codeowners: v.optional(v.string()),

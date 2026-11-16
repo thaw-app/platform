@@ -191,6 +191,10 @@ repos:
     hasDiscussions: true
     codeowners: |
       * @diazdesandi
+    # Floe needs macOS 26 or later.
+    excludeLabels:
+      - macos-14
+      - macos-15
     labels:
       app:
         color: "5319E7"

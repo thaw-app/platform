@@ -1,3 +1,4 @@
+import { omit } from "es-toolkit";
 import type {
 	BranchProtectionConfig,
 	BranchProtectionEntry,
@@ -115,7 +116,7 @@ export function buildRepoConfig(
 		security: { ...security, ...repo.security },
 		labels: repo.bare
 			? { ...(repo.labels ?? {}) }
-			: { ...labels, ...repo.labels },
+			: { ...omit(labels, repo.excludeLabels ?? []), ...repo.labels },
 		teams: teamAccess,
 		// rulesets.yaml alone decides which repos a ruleset is on. A bare repo
 		// skips labels and CODEOWNERS but can still have rulesets.

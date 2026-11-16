@@ -105,6 +105,12 @@
 							"additionalProperties": false
 						}
 					},
+					"excludeLabels": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
 					"codeowners": {
 						"type": "string"
 					},

@@ -173,6 +173,23 @@ describe("buildRepoConfig", () => {
 		expect(Object.keys(built.labels ?? {})).toEqual(["global", "local"]);
 	});
 
+	it("leaves out the org labels a repo excludes", () => {
+		const built = buildRepoConfig(
+			repo({
+				excludeLabels: ["macos-14"],
+				labels: { local: { color: "ffffff" } },
+			}),
+			{
+				...baseCtx,
+				labels: {
+					"macos-14": { color: "000000" },
+					global: { color: "000000" },
+				},
+			},
+		);
+		expect(Object.keys(built.labels ?? {})).toEqual(["global", "local"]);
+	});
+
 	it("renders a dependabot.yml for the ecosystems a repo lists", () => {
 		expect(buildRepoConfig(repo(), baseCtx).dependabotContent).toBe("");
 

@@ -30,7 +30,7 @@ defaults:
     description: "Something that used to work and broke"
   upstream:
     color: "132423"
-    description: "Issue exists in the app that provides the menu bar icon."
+    description: "Caused by another app, macOS, or a dependency we don't control"
   stale:
     color: "212328"
     description: "Issues or PRs that have seen no progress"

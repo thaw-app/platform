@@ -163,6 +163,28 @@ describe("validateCrossRefs", () => {
 		expect(issues[0]?.path).toBe("labels.dup");
 	});
 
+	it("flags excluded labels that are not org labels, and exclusions on bare repos", () => {
+		const labelGroups: LabelGroups = {
+			platforms: { "macos-14": { color: "ffffff" } },
+		};
+		const cfg = baseConfig();
+		cfg.repos = [
+			{ name: "ok", description: "d", excludeLabels: ["macos-14"] },
+			{ name: "typo", description: "d", excludeLabels: ["macos-41"] },
+			{
+				name: "bare",
+				description: "d",
+				bare: true,
+				excludeLabels: ["macos-14"],
+			},
+		];
+		const issues = validateCrossRefs(cfg, labelGroups);
+		expect(issues.map((i) => [i.path, i.message])).toEqual([
+			["repos.typo.excludeLabels", "macos-41 is not an org label"],
+			["repos.bare.excludeLabels", "a bare repo gets no org labels to exclude"],
+		]);
+	});
+
 	it("warns when ruleset and branch protection require different status checks", () => {
 		const cfg = baseConfig();
 		cfg.rulesets = [

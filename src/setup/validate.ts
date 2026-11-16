@@ -285,6 +285,27 @@ function validateLabelGroups(labelGroups: LabelGroups): ValidationIssue[] {
 		);
 }
 
+function validateExcludedLabels(
+	config: InfraConfig,
+	labelGroups: LabelGroups,
+): ValidationIssue[] {
+	const orgLabels = new Set(
+		Object.values(labelGroups).flatMap((labels) => Object.keys(labels)),
+	);
+	return config.repos.flatMap((repo) => {
+		const path = `repos.${repo.name}.excludeLabels`;
+		const excluded = repo.excludeLabels ?? [];
+		return [
+			...(repo.bare && excluded.length > 0
+				? [issue(path, "a bare repo gets no org labels to exclude")]
+				: []),
+			...excluded
+				.filter((name) => !orgLabels.has(name))
+				.map((name) => issue(path, `${name} is not an org label`)),
+		];
+	});
+}
+
 export function validateCrossRefs(
 	config: InfraConfig,
 	labelGroups: LabelGroups,
@@ -297,5 +318,6 @@ export function validateCrossRefs(
 		...validateRulesetBranchProtectionOverlap(config),
 		...validateSecurity(config),
 		...validateLabelGroups(labelGroups),
+		...validateExcludedLabels(config, labelGroups),
 	];
 }
