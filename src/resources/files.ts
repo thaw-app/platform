@@ -126,7 +126,8 @@ function createDependabotPullRequest(
 			title: DEPENDABOT_MESSAGE,
 			body: "Written by thaw-app/platform from `config/repos.yaml` and `defaults.dependabot` in `config/org.yaml`. This branch takes changes by pull request only, so the file is offered here and not committed.",
 		},
-		mergeOptions(kept, { dependsOn: [file] }),
+		// Bots such as CodeRabbit append to the body, which the drift check would flag.
+		mergeOptions(kept, { dependsOn: [file], ignoreChanges: ["body"] }),
 	);
 }
 
