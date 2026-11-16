@@ -70,6 +70,10 @@
 						},
 						"pushProtection": {
 							"type": "boolean"
+						},
+						"actionsCanOpenPullRequests": {
+							"type": "boolean",
+							"default": false
 						}
 					},
 					"required": [
@@ -83,7 +87,8 @@
 						"dependabotAlerts": true,
 						"dependabotSecurityUpdates": false,
 						"secretScanning": true,
-						"pushProtection": true
+						"pushProtection": true,
+						"actionsCanOpenPullRequests": false
 					}
 				},
 				"dependabot": {

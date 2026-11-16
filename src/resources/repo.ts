@@ -3,6 +3,7 @@ import {
 	ComponentResource,
 	type ComponentResourceOptions,
 	mergeOptions,
+	type Resource,
 } from "@pulumi/pulumi";
 import type { ResolvedRepoConfig, TeamAccess, TeamResourceMap } from "@/types";
 import { createBranchProtection } from "./branch";
@@ -25,6 +26,8 @@ type ActiveRepoContext = {
 	dependabotContent: string;
 	dependabotByPullRequest: boolean;
 	teamResources: TeamResourceMap;
+	// Org-wide settings this repo's own settings can only narrow.
+	orgSettings: Resource[];
 };
 
 const status = (on: boolean) => (on ? "enabled" : "disabled");
@@ -103,6 +106,22 @@ function provisionBranchProtection(
 	}
 }
 
+// Waits for the org setting, which would otherwise reject the change.
+function provisionWorkflowPermissions(
+	parent: OrgRepository,
+	ctx: ActiveRepoContext,
+) {
+	new github.WorkflowRepositoryPermissions(
+		`${ctx.resourcePrefix}-workflow-permissions`,
+		{
+			repository: ctx.repo.name,
+			defaultWorkflowPermissions: "read",
+			canApprovePullRequestReviews: ctx.security.actionsCanOpenPullRequests,
+		},
+		{ parent, dependsOn: [ctx.repo, ...ctx.orgSettings] },
+	);
+}
+
 // Security updates need alerts, so the alerts setting is applied first.
 function provisionDependabot(parent: OrgRepository, ctx: ActiveRepoContext) {
 	const alerts = new github.RepositoryVulnerabilityAlerts(
@@ -129,6 +148,7 @@ function provisionActiveRepoResources(
 	provisionBranchProtection(parent, ctx);
 
 	provisionDependabot(parent, ctx);
+	provisionWorkflowPermissions(parent, ctx);
 
 	createEnvironments(
 		{
@@ -181,6 +201,7 @@ export default class OrgRepository extends ComponentResource {
 		config: ResolvedRepoConfig,
 		teamResources: TeamResourceMap,
 		opts?: ComponentResourceOptions,
+		orgSettings: Resource[] = [],
 	) {
 		super("custom:github:OrgRepository", resourcePrefix, {}, opts);
 
@@ -268,6 +289,7 @@ export default class OrgRepository extends ComponentResource {
 				dependabotContent,
 				dependabotByPullRequest,
 				teamResources,
+				orgSettings,
 			});
 		}
 

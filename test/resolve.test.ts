@@ -20,6 +20,7 @@ const defaults = {
 		dependabotSecurityUpdates: false,
 		secretScanning: true,
 		pushProtection: true,
+		actionsCanOpenPullRequests: false,
 	},
 	dependabot: {
 		interval: "weekly",

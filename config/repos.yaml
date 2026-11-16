@@ -54,6 +54,9 @@ repos:
   - name: homebrew-tap
     description: Homebrew tap formulas for Thaw releases.
     visibility: public
+    # scripts/bump-cask.sh opens its bump pull requests with GITHUB_TOKEN.
+    security:
+      actionsCanOpenPullRequests: true
     topics:
       - thaw
       - macos

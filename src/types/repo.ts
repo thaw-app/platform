@@ -30,6 +30,8 @@ export const SecuritySchema = v.strictObject({
 	dependabotSecurityUpdates: v.boolean(),
 	secretScanning: v.boolean(),
 	pushProtection: v.boolean(),
+	// GitHub's "Allow GitHub Actions to create and approve pull requests".
+	actionsCanOpenPullRequests: v.optional(v.boolean(), false),
 });
 
 export type SecurityConfig = v.InferOutput<typeof SecuritySchema>;

@@ -76,6 +76,10 @@
 							},
 							"pushProtection": {
 								"type": "boolean"
+							},
+							"actionsCanOpenPullRequests": {
+								"type": "boolean",
+								"default": false
 							}
 						},
 						"required": [],
