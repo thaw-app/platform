@@ -104,6 +104,7 @@ describe("OrgConfigSchema", () => {
 				dependabotSecurityUpdates: false,
 				secretScanning: true,
 				pushProtection: true,
+				actionsCanOpenPullRequests: false,
 			});
 		}
 	});

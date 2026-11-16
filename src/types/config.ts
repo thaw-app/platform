@@ -42,6 +42,7 @@ const OrgDefaultsSchema = v.strictObject({
 		dependabotSecurityUpdates: false,
 		secretScanning: true,
 		pushProtection: true,
+		actionsCanOpenPullRequests: false,
 	}),
 	dependabot: v.optional(DependabotDefaultsSchema, {
 		interval: "weekly",

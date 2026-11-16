@@ -30,6 +30,8 @@ export const SecuritySchema = v.strictObject({
 	dependabotSecurityUpdates: v.boolean(),
 	secretScanning: v.boolean(),
 	pushProtection: v.boolean(),
+	// GitHub's "Allow GitHub Actions to create and approve pull requests".
+	actionsCanOpenPullRequests: v.optional(v.boolean(), false),
 });
 
 export type SecurityConfig = v.InferOutput<typeof SecuritySchema>;
@@ -128,6 +130,8 @@ export const RepoConfigSchema = v.pipe(
 		hasDiscussions: v.optional(v.boolean()),
 		security: v.optional(v.partial(SecuritySchema)),
 		labels: v.optional(LabelSetSchema),
+		// Org labels this repo leaves out, such as OS versions it never supported.
+		excludeLabels: v.optional(v.array(v.string())),
 		// CODEOWNERS content for this repo, in place of the org template. A
 		// bare repo gets no CODEOWNERS unless it sets this.
 		codeowners: v.optional(v.string()),

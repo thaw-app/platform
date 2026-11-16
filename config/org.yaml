@@ -22,6 +22,8 @@ defaults:
     dependabotSecurityUpdates: true
     secretScanning: true
     pushProtection: true
+    # Lets workflows open pull requests with GITHUB_TOKEN.
+    actionsCanOpenPullRequests: false
   # How a synced .github/dependabot.yml behaves, matching Thaw's. A repo opts
   # in by listing its ecosystems under `dependabot` in repos.yaml.
   dependabot:

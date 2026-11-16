@@ -76,6 +76,10 @@
 							},
 							"pushProtection": {
 								"type": "boolean"
+							},
+							"actionsCanOpenPullRequests": {
+								"type": "boolean",
+								"default": false
 							}
 						},
 						"required": [],
@@ -99,6 +103,12 @@
 							},
 							"required": ["color"],
 							"additionalProperties": false
+						}
+					},
+					"excludeLabels": {
+						"type": "array",
+						"items": {
+							"type": "string"
 						}
 					},
 					"codeowners": {

@@ -1,3 +1,4 @@
+import github from "@pulumi/github";
 import pulumi from "@pulumi/pulumi";
 import {
 	createRulesets,
@@ -58,7 +59,21 @@ export default async function setupOrg() {
 		}),
 	);
 
+	// A repo can't allow what the org forbids, so the org allows it if any repo does.
+	const workflowPermissions = new github.ActionsOrganizationWorkflowPermissions(
+		"org-workflow-permissions",
+		{
+			organizationSlug: organization,
+			defaultWorkflowPermissions: "read",
+			canApprovePullRequestReviews: resolvedRepos.some(
+				(repo) => repo.security.actionsCanOpenPullRequests,
+			),
+		},
+	);
+
+	const orgSettings = [workflowPermissions];
 	for (const resolved of resolvedRepos) {
-		new OrgRepository(resolved.pulumiName, resolved, teamResources); // NOSONAR
+		const { pulumiName } = resolved;
+		new OrgRepository(pulumiName, resolved, teamResources, {}, orgSettings); // NOSONAR
 	}
 }

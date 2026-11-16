@@ -30,31 +30,12 @@ defaults:
     description: "Something that used to work and broke"
   upstream:
     color: "132423"
-    description: "Issue exists in the app that provides the menu bar icon."
+    description: "Caused by another app, macOS, or a dependency we don't control"
   stale:
     color: "212328"
     description: "Issues or PRs that have seen no progress"
 
-# ─── Priority Levels ──────────────────────────────────────────────────────────
-priorities:
-  P0:
-    color: "B60205"
-    description: "App crashes or is completely unusable; no workaround"
-  P1:
-    color: "D93F0B"
-    description: "Core feature is broken for most users; workaround is painful or partial"
-  P2:
-    color: "FBCA04"
-    description: "Noticeable bug with a usable workaround"
-  P3:
-    color: "0E8A16"
-    description: "Minor issue that doesn't block usage; important but not urgent"
-  P4:
-    color: "1D76DB"
-    description: "Cosmetic or low-impact issue unrelated to core functionality"
-  P5:
-    color: "C2E0C6"
-    description: "Acknowledged, but not planned; open for discussion"
+# Priority is the org Issue field, not a label.
 
 # ─── Platform Support ─────────────────────────────────────────────────────────
 platforms:
@@ -67,12 +48,18 @@ platforms:
   macos-26:
     color: "1D6FA4"
     description: "Issue specific to macOS 26 (Tahoe)"
-  unsupported-version:
+  macos-27:
+    color: "bda673"
+    description: "Issue specific to macOS 27 (Golden Gate)"
+  unsupported:
     color: "ffffff"
     description: "Unsupported OS or app version."
 
 # ─── Development / Workflow ───────────────────────────────────────────────────
 development:
+  fix:
+    color: "0E8A16"
+    description: "PR that fixes a defect (issue reports use bug)"
   performance:
     color: "ba4021"
     description: "Performance improvements"
@@ -112,6 +99,9 @@ triage:
   blocked:
     color: "7D3C98"
     description: "Waiting on upstream, Apple, or another dependency"
+  parked:
+    color: "d4c478"
+    description: "Waiting for new version"
   "keep open":
     color: "101d62"
     description: "Announcements, issues being worked on, etc. Anything important to keep alive."

@@ -54,6 +54,9 @@ repos:
   - name: homebrew-tap
     description: Homebrew tap formulas for Thaw releases.
     visibility: public
+    # scripts/bump-cask.sh opens its bump pull requests with GITHUB_TOKEN.
+    security:
+      actionsCanOpenPullRequests: true
     topics:
       - thaw
       - macos
@@ -172,7 +175,7 @@ repos:
         directories:
           - "/images/ci-tools"
 
-  # Floe keeps its own labels (bare) and has one code owner. Its main branch is
+  # Floe's area labels are the ones its pr-metadata workflow applies. Its main branch is
   # protected the way Thaw's development branch is, with Floe's own check names:
   # lint is what Thaw calls static_analysis.
   - name: Floe
@@ -183,12 +186,31 @@ repos:
       - squash
     deleteBranchOnMerge: true
     autoInit: false
-    bare: true
     hasWiki: true
     hasProjects: true
     hasDiscussions: true
     codeowners: |
       * @diazdesandi
+    # Floe needs macOS 26 or later.
+    excludeLabels:
+      - macos-14
+      - macos-15
+    labels:
+      app:
+        color: "5319E7"
+        description: "The Floe app: sources, resources and project files"
+      runtime:
+        color: "5319E7"
+        description: "The extension runtime"
+      extensions:
+        color: "5319E7"
+        description: "Bundled extensions"
+      vendor:
+        color: "5319E7"
+        description: "Vendored third-party code"
+      ops:
+        color: "5319E7"
+        description: "CI, releases, scripts and other repo upkeep"
     branchProtection:
       main:
         requiredReviewCount: 1

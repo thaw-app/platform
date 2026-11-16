@@ -46,6 +46,9 @@ const VULNERABILITY_ALERTS =
 const SECURITY_UPDATES =
 	"github:index/repositoryDependabotSecurityUpdates:RepositoryDependabotSecurityUpdates";
 
+const WORKFLOW_PERMISSIONS =
+	"github:index/workflowRepositoryPermissions:WorkflowRepositoryPermissions";
+
 const first = <T>(items: T[]): T => {
 	const item = items[0];
 	if (!item) throw new Error("expected at least one item");
@@ -71,6 +74,7 @@ const resolvedRepo = (
 		dependabotSecurityUpdates: false,
 		secretScanning: true,
 		pushProtection: true,
+		actionsCanOpenPullRequests: false,
 	},
 	teams: [],
 	resolvedRepoRulesets: [],
@@ -202,6 +206,39 @@ describe("OrgRepository", () => {
 		const updates = first(findByType(SECURITY_UPDATES));
 		expect(updates.name).toBe("r-dependabot-security-updates");
 		expect(updates.inputs.enabled).toBe(false);
+	});
+
+	it("keeps workflow tokens read-only and lets Actions open pull requests only where asked", async () => {
+		provisionOrgRepository("closed", resolvedRepo());
+		provisionOrgRepository(
+			"open",
+			resolvedRepo({
+				security: {
+					...resolvedRepo().security,
+					actionsCanOpenPullRequests: true,
+				},
+			}),
+		);
+		await settle();
+
+		const permissions = findByType(WORKFLOW_PERMISSIONS);
+		expect(permissions.map((p) => p.name).sort()).toEqual([
+			"closed-workflow-permissions",
+			"open-workflow-permissions",
+		]);
+		for (const p of permissions) {
+			expect(p.inputs.defaultWorkflowPermissions).toBe("read");
+			expect(p.inputs.canApprovePullRequestReviews).toBe(
+				p.name === "open-workflow-permissions",
+			);
+		}
+	});
+
+	it("leaves workflow permissions alone on archived repos", async () => {
+		provisionOrgRepository("r", resolvedRepo({ archived: true }));
+		await settle();
+
+		expect(findByType(WORKFLOW_PERMISSIONS)).toHaveLength(0);
 	});
 
 	it("sets secret scanning on public repos and leaves private ones alone", async () => {

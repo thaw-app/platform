@@ -25,3 +25,9 @@ members:
   - username: camguillory
     teams:
       - slug: contributors
+  - username: alvst
+    teams:
+      - slug: contributors
+  - username: Belligerently
+    teams:
+      - slug: contributors
