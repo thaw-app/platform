@@ -72,15 +72,15 @@ Source: [`docs/architecture.mmd`](docs/architecture.mmd). Edit the `.mmd` file a
 
 ## Repository layout
 
-| Path | Role |
-| --- | --- |
-| [`config/`](config/) | Declarative org config (YAML) and generated JSON Schemas for editor validation |
-| [`src/setup/`](src/setup/) | Load, validate, and resolve config into Pulumi inputs |
-| [`src/types/`](src/types/) | Valibot schemas and TypeScript types |
-| [`src/resources/`](src/resources/) | Pulumi resources (teams, rulesets, per-repo components) |
-| [`src/org.ts`](src/org.ts) | Program entry: wires setup output to resources |
-| [`test/`](test/) | Unit tests (loader, validation, resolve, resources, schema generation) |
-| [`.github/workflows/`](.github/workflows/) | CI/CD, reusable Pulumi workflow, drift detection |
+| Path                                       | Role                                                                           |
+| ------------------------------------------ | ------------------------------------------------------------------------------ |
+| [`config/`](config/)                       | Declarative org config (YAML) and generated JSON Schemas for editor validation |
+| [`src/setup/`](src/setup/)                 | Load, validate, and resolve config into Pulumi inputs                          |
+| [`src/types/`](src/types/)                 | Valibot schemas and TypeScript types                                           |
+| [`src/resources/`](src/resources/)         | Pulumi resources (teams, rulesets, per-repo components)                        |
+| [`src/org.ts`](src/org.ts)                 | Program entry: wires setup output to resources                                 |
+| [`test/`](test/)                           | Unit tests (loader, validation, resolve, resources, schema generation)         |
+| [`.github/workflows/`](.github/workflows/) | CI/CD, reusable Pulumi workflow, drift detection                               |
 
 ## How it works
 
@@ -119,18 +119,18 @@ flowchart LR
   pr -.-> preview
 ```
 
-| Workflow | File | When it runs |
-| --- | --- | --- |
-| **CI/CD** | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | PRs and pushes to `main` (markdown-only changes are ignored), merge queue, or manual dispatch |
-| **Pulumi Setup** | [`.github/workflows/pulumi.yml`](.github/workflows/pulumi.yml) | Reusable: `preview` on PRs, `up` on `main`, or `preview --expect-no-changes` for drift |
-| **Drift detection** | [`.github/workflows/drift.yml`](.github/workflows/drift.yml) | Weekly (Mondays 06:17 UTC) or `workflow_dispatch` |
+| Workflow            | File                                                           | When it runs                                                                                  |
+| ------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| **CI/CD**           | [`.github/workflows/ci.yml`](.github/workflows/ci.yml)         | PRs and pushes to `main` (markdown-only changes are ignored), merge queue, or manual dispatch |
+| **Pulumi Setup**    | [`.github/workflows/pulumi.yml`](.github/workflows/pulumi.yml) | Reusable: `preview` on PRs, `up` on `main`, or `preview --expect-no-changes` for drift        |
+| **Drift detection** | [`.github/workflows/drift.yml`](.github/workflows/drift.yml)   | Weekly (Mondays 06:17 UTC) or `workflow_dispatch`                                             |
 
-| Trigger | Jobs |
-| --- | --- |
-| **PR opened / updated** | test → preview, and sonar alongside |
+| Trigger                        | Jobs                                                             |
+| ------------------------------ | ---------------------------------------------------------------- |
+| **PR opened / updated**        | test → preview, and sonar alongside                              |
 | **PR merged → push to `main`** | deploy only (merge commit detected; tests already ran on the PR) |
-| **Direct push to `main`** | test → deploy, and sonar alongside |
-| **`workflow_dispatch`** | test (manual) |
+| **Direct push to `main`**      | test → deploy, and sonar alongside                               |
+| **`workflow_dispatch`**        | test (manual)                                                    |
 
 On push to `main`, merge commits are detected by message (`Merge pull request …` or squash `… (#123)`). Those skip `test` and run `deploy` only. A direct push (no merge markers) runs `test` then `deploy`.
 
@@ -144,26 +144,26 @@ On `main`, `deploy` runs `pulumi up` against stack `diazdesandi/dev`. CI authent
 
 ### Secrets
 
-| Name | Where | Purpose |
-| --- | --- | --- |
-| `PULUMI_GITHUB_TOKEN` | GitHub Actions secret | Classic PAT with `admin:org` and `repo`; passed to the Pulumi GitHub provider as `GITHUB_TOKEN` when CI runs `up` |
-| `PULUMI_GITHUB_READ_TOKEN` | GitHub Actions secret, optional | Read-only token for `preview` runs (pull requests and the drift check), which execute a branch's code. Without it, previews fall back to `PULUMI_GITHUB_TOKEN` |
-| `SONAR_TOKEN` | GitHub Actions secret | SonarCloud analysis in the `sonar` job |
-| `github:token` | Pulumi stack config (`pulumi config set --secret`) | Same PAT scope for local `pulumi preview` / `pulumi up`; not read from Actions |
+| Name                       | Where                                              | Purpose                                                                                                                                                        |
+| -------------------------- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PULUMI_GITHUB_TOKEN`      | GitHub Actions secret                              | Classic PAT with `admin:org` and `repo`; passed to the Pulumi GitHub provider as `GITHUB_TOKEN` when CI runs `up`                                              |
+| `PULUMI_GITHUB_READ_TOKEN` | GitHub Actions secret, optional                    | Read-only token for `preview` runs (pull requests and the drift check), which execute a branch's code. Without it, previews fall back to `PULUMI_GITHUB_TOKEN` |
+| `SONAR_TOKEN`              | GitHub Actions secret                              | SonarCloud analysis in the `sonar` job                                                                                                                         |
+| `github:token`             | Pulumi stack config (`pulumi config set --secret`) | Same PAT scope for local `pulumi preview` / `pulumi up`; not read from Actions                                                                                 |
 
 Pulumi Cloud access in CI uses OIDC ([`pulumi/auth-actions`](.github/workflows/pulumi.yml)), so repository secrets hold no long-lived Pulumi token.
 
 ## Config files
 
-| File | Schema | Purpose |
-| --- | --- | --- |
-| [`config/org.yaml`](config/org.yaml) | `OrgConfigSchema` | Org-wide defaults (visibility, merge strategy, squash commit shaping, feature toggles, security settings). |
-| [`config/repos.yaml`](config/repos.yaml) | `ReposFileSchema` | Repositories and per-repo overrides, including the CI checks a ruleset requires of that repo. |
-| [`config/rulesets.yaml`](config/rulesets.yaml) | `RulesetsFileSchema` | Branch/tag/push rulesets, and the repos each one is on. |
-| [`config/teams.yaml`](config/teams.yaml) | `TeamsFileSchema` | Teams and per-repo team access. |
-| [`config/members.yaml`](config/members.yaml) | `MembersFileSchema` | Org members and their team memberships. |
-| [`config/labels.yaml`](config/labels.yaml) | `LabelGroupsSchema` | Issue/PR labels, grouped; applied to every repo. |
-| [`config/codeowners.yaml`](config/codeowners.yaml) | `CodeownersFileSchema` | Global CODEOWNERS template synced to `.github/CODEOWNERS` in every managed repo. |
+| File                                               | Schema                 | Purpose                                                                                                    |
+| -------------------------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------- |
+| [`config/org.yaml`](config/org.yaml)               | `OrgConfigSchema`      | Org-wide defaults (visibility, merge strategy, squash commit shaping, feature toggles, security settings). |
+| [`config/repos.yaml`](config/repos.yaml)           | `ReposFileSchema`      | Repositories and per-repo overrides, including the CI checks a ruleset requires of that repo.              |
+| [`config/rulesets.yaml`](config/rulesets.yaml)     | `RulesetsFileSchema`   | Branch/tag/push rulesets, and the repos each one is on.                                                    |
+| [`config/teams.yaml`](config/teams.yaml)           | `TeamsFileSchema`      | Teams and per-repo team access.                                                                            |
+| [`config/members.yaml`](config/members.yaml)       | `MembersFileSchema`    | Org members and their team memberships.                                                                    |
+| [`config/labels.yaml`](config/labels.yaml)         | `LabelGroupsSchema`    | Issue/PR labels, grouped; applied to every repo.                                                           |
+| [`config/codeowners.yaml`](config/codeowners.yaml) | `CodeownersFileSchema` | Global CODEOWNERS template synced to `.github/CODEOWNERS` in every managed repo.                           |
 
 GitHub has no org-level CODEOWNERS file. This repo keeps one canonical template in `config/codeowners.yaml` and Pulumi writes it into each repository on `pulumi up`.
 
@@ -242,18 +242,18 @@ pulumi up   # or re-run CI deploy
 
 Per-stack settings use the `thaw-config:` namespace (Pulumi project name from [`Pulumi.yaml`](Pulumi.yaml); npm package name is `platform`).
 
-| Key | Purpose |
-| --- | --- |
-| `github:owner` | GitHub organization (`thaw-app`) |
-| `github:token` | Provider credential (secret; set on stack for local runs) |
-| `thaw-config:enableTeams` (default `true`) | Create teams and memberships |
+| Key                                           | Purpose                                                                                            |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `github:owner`                                | GitHub organization (`thaw-app`)                                                                   |
+| `github:token`                                | Provider credential (secret; set on stack for local runs)                                          |
+| `thaw-config:enableTeams` (default `true`)    | Create teams and memberships                                                                       |
 | `thaw-config:enableRulesets` (default `true`) | Create org-level rulesets; when `false`, provision the same policy as per-repo repository rulesets |
 
 ### Stack
 
-| Stack | Pulumi account | Purpose | Deployed by | `github:owner` | `enableRulesets` | `enableTeams` | Config file |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| `dev` | `diazdesandi` (personal) | Governs the live [`thaw-app`](https://github.com/thaw-app) org | [CI/CD](.github/workflows/ci.yml) `deploy` job on push to `main` | `thaw-app` | `false`¹ | `true` | [`Pulumi.dev.yaml`](Pulumi.dev.yaml) |
+| Stack | Pulumi account           | Purpose                                                        | Deployed by                                                      | `github:owner` | `enableRulesets` | `enableTeams` | Config file                          |
+| ----- | ------------------------ | -------------------------------------------------------------- | ---------------------------------------------------------------- | -------------- | ---------------- | ------------- | ------------------------------------ |
+| `dev` | `diazdesandi` (personal) | Governs the live [`thaw-app`](https://github.com/thaw-app) org | [CI/CD](.github/workflows/ci.yml) `deploy` job on push to `main` | `thaw-app`     | `false`¹         | `true`        | [`Pulumi.dev.yaml`](Pulumi.dev.yaml) |
 
 Pulumi project: `thaw-config`. Stack reference: `diazdesandi/dev`. `github:owner` is the GitHub org, not your Pulumi login.
 
